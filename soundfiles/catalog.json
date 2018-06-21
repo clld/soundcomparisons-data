@@ -1,0 +1,56 @@
+{
+    "EAEA0-0302-69C5-51E3-0": {
+        "bitstreams": [
+            {
+                "bitstreamid": "README",
+                "checksum": "d41d8cd98f00b204e9800998ecf8427e",
+                "created": 1529577257295,
+                "checksum-algorithm": "MD5",
+                "last-modified": 1529577257299,
+                "filesize": 0,
+                "content-type": "application/octet-stream"
+            }
+        ],
+        "metadata": {
+            "collection": "soundcomparisons",
+            "creator": "pycdstar 0.4.0",
+            "path": "README"
+        }
+    },
+    "EAEA0-59AF-C1B3-4E58-0": {
+        "bitstreams": [
+            {
+                "bitstreamid": ".gitignore",
+                "checksum": "9e2b7057d1232023eee1c79bc645d9db",
+                "created": 1529577258830,
+                "checksum-algorithm": "MD5",
+                "last-modified": 1529577258837,
+                "filesize": 8,
+                "content-type": "application/octet-stream"
+            }
+        ],
+        "metadata": {
+            "collection": "soundcomparisons",
+            "creator": "pycdstar 0.4.0",
+            "path": ".gitignore"
+        }
+    },
+    "EAEA0-6859-0180-512B-0": {
+        "bitstreams": [
+            {
+                "bitstreamid": "test.py",
+                "checksum": "b311ff7a035ea51b63adc7d23430f1f4",
+                "created": 1529577249941,
+                "checksum-algorithm": "MD5",
+                "last-modified": 1529577249986,
+                "filesize": 207,
+                "content-type": "text/x-python"
+            }
+        ],
+        "metadata": {
+            "collection": "soundcomparisons",
+            "creator": "pycdstar 0.4.0",
+            "path": "test.py"
+        }
+    }
+}

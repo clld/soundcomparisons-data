@@ -102,3 +102,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+.idea/
+translations/.i18n-editor-metadata
+
