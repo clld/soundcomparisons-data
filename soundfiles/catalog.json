@@ -1,56 +1,1418 @@
 {
-    "EAEA0-0302-69C5-51E3-0": {
-        "bitstreams": [
-            {
-                "bitstreamid": "README",
-                "checksum": "d41d8cd98f00b204e9800998ecf8427e",
-                "created": 1529577257295,
-                "checksum-algorithm": "MD5",
-                "last-modified": 1529577257299,
-                "filesize": 0,
-                "content-type": "application/octet-stream"
-            }
-        ],
-        "metadata": {
-            "collection": "soundcomparisons",
-            "creator": "pycdstar 0.4.0",
-            "path": "README"
-        }
-    },
-    "EAEA0-59AF-C1B3-4E58-0": {
-        "bitstreams": [
-            {
-                "bitstreamid": ".gitignore",
-                "checksum": "9e2b7057d1232023eee1c79bc645d9db",
-                "created": 1529577258830,
-                "checksum-algorithm": "MD5",
-                "last-modified": 1529577258837,
-                "filesize": 8,
-                "content-type": "application/octet-stream"
-            }
-        ],
-        "metadata": {
-            "collection": "soundcomparisons",
-            "creator": "pycdstar 0.4.0",
-            "path": ".gitignore"
-        }
-    },
-    "EAEA0-6859-0180-512B-0": {
-        "bitstreams": [
-            {
-                "bitstreamid": "test.py",
-                "checksum": "b311ff7a035ea51b63adc7d23430f1f4",
-                "created": 1529577249941,
-                "checksum-algorithm": "MD5",
-                "last-modified": 1529577249986,
-                "filesize": 207,
-                "content-type": "text/x-python"
-            }
-        ],
-        "metadata": {
-            "collection": "soundcomparisons",
-            "creator": "pycdstar 0.4.0",
-            "path": "test.py"
-        }
-    }
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_001_one_oyno": [
+        "EAEA0-59CB-4623-54B2-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_002_two_dwaaw": [
+        "EAEA0-3A11-8354-556E-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_003_three_tris": [
+        "EAEA0-303B-3625-4014-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_004_four_kwetwores": [
+        "EAEA0-B4BD-F80F-30BF-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_005_five_kwenkwe": [
+        "EAEA0-BA9D-2F91-DAE1-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_006_six_swexs": [
+        "EAEA0-F43D-FDB2-B838-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_007_seven_sextam": [
+        "EAEA0-EC9F-D842-6626-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_008_eight_oxtuu": [
+        "EAEA0-E3A2-9292-5AFF-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_009_nine_nowan": [
+        "EAEA0-0B8A-7258-71D4-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_010_ten_dekam": [
+        "EAEA0-2D2F-C58D-5C43-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_011_twenty_wikantii": [
+        "EAEA0-A46B-A9A2-D660-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_020_hundred_kantom": [
+        "EAEA0-E24E-85F5-8192-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_051_in_year_bleedanii_nas": [
+        "EAEA0-DEB7-FEFA-173A-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_051_two_years_bleedanii_len": [
+        "EAEA0-EF3E-9140-3EFC-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_051_year_bleedanii": [
+        "EAEA0-62F2-9B22-EEDC-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_081_right_dexswos": [
+        "EAEA0-3ECB-B086-9131-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_081_right_dexswos_lex2": [
+        "EAEA0-F37E-CA61-F43B-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_101_I_mii": [
+        "EAEA0-E537-E367-66AE-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_104_you_tuu": [
+        "EAEA0-846E-8713-4AF4-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_108_she_sii": [
+        "EAEA0-3D48-D211-D678-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_109_every_kwaakwos": [
+        "EAEA0-372A-DC61-7E47-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_109_every_kwaakwos_lex2": [
+        "EAEA0-E9CF-209C-2369-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_122_who_kwees": [
+        "EAEA0-366B-13FD-B8DD-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_149_through_tree": [
+        "EAEA0-FB28-6823-4DD1-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_201_head_kwennom": [
+        "EAEA0-C614-7BEE-AB26-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_201_in_head_kwennom_nas": [
+        "EAEA0-B44A-A489-11E7-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_201_two_heads_kwennom_len": [
+        "EAEA0-002D-19A7-EDB0-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_212_her_nose_srognaa_gem": [
+        "EAEA0-1EF4-44E4-00DF-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_212_nose_srognaa": [
+        "EAEA0-86EA-EE78-6938-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_212_two_noses_srognaa_len": [
+        "EAEA0-FB60-7132-C503-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_214_teardrop_dakro": [
+        "EAEA0-A83C-C06A-307D-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_223_tongue_tangwaat": [
+        "EAEA0-1999-522C-FB5B-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_232_elbow_oliinaa": [
+        "EAEA0-307A-831D-4970-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_235_in_palm_bostaa_nas": [
+        "EAEA0-BA36-F617-D858-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_235_palm_bostaa": [
+        "EAEA0-9068-2CC5-4823-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_235_two_palms_bostaa_len": [
+        "EAEA0-8AB4-6C84-ADBB-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_237_fist_durnos": [
+        "EAEA0-23F6-AB7A-573B-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_237_in_fist_durnos_nas": [
+        "EAEA0-285D-1CC2-A21A-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_237_two_fists_durnos_len": [
+        "EAEA0-B835-37DF-BBBF-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_253_knee_gluunos": [
+        "EAEA0-690D-BB4D-EC23-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_260_shit_kakkaa": [
+        "EAEA0-A3EB-D21B-B1AD-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_263_skin_krokkenos": [
+        "EAEA0-5773-4112-60A1-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_264_nail_anwiinaa": [
+        "EAEA0-E891-3D43-E1B6-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_267_breath_anatlaa": [
+        "EAEA0-32E2-6A1A-8A17-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_274_breast_kikos": [
+        "EAEA0-3F7D-44D8-17F0-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_281_heart_kridyos": [
+        "EAEA0-0B4B-31CB-2FEC-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_281_her_heart_kridyos_gem": [
+        "EAEA0-7E8C-1AC7-523C-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_281_two_hearts_kridyos_len": [
+        "EAEA0-F187-0550-ACE5-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_284_liver_awe": [
+        "EAEA0-05A2-DFA1-6D0A-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_311_cat_kattos": [
+        "EAEA0-D2A8-9D46-D6F4-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_311_her_cat_kattos_gem": [
+        "EAEA0-A8E3-D9D7-128B-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_311_two_cats_kattos_len": [
+        "EAEA0-98B4-607A-8084-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_312_dog_kuu": [
+        "EAEA0-F826-0C48-D6FF-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_319_goat_gabros": [
+        "EAEA0-CF97-53EF-B3FF-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_320_cockerel_kalyaakos": [
+        "EAEA0-9D16-2652-A4BF-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_328_goose_gexdos": [
+        "EAEA0-4750-4735-500A-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_328_her_goose_gexdos_gem": [
+        "EAEA0-CB24-E92D-15A0-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_328_two_geese_gexdos_len": [
+        "EAEA0-3588-C1BB-DA55-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_330_bull_tarwos": [
+        "EAEA0-0662-99C2-AD2A-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_330_her_bull_tarwos_gem": [
+        "EAEA0-2D00-0F6A-56A0-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_330_two_bulls_tarwos_len": [
+        "EAEA0-95C8-52FA-DD66-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_332_lamb_owigno": [
+        "EAEA0-D153-939F-68C1-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_333_pig_mokkus": [
+        "EAEA0-295C-FD98-2A80-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_341_snake_natrixs": [
+        "EAEA0-A15F-5C3F-F1E6-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_384_wing_skeedos": [
+        "EAEA0-C247-D0F8-7E6C-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_386_mane_mongaa": [
+        "EAEA0-9157-3831-2155-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_391_leather_letros": [
+        "EAEA0-F02F-5F65-B7E9-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_395_in_nest_nizdos_nas": [
+        "EAEA0-BA3A-5A49-6524-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_395_nest_nizdos": [
+        "EAEA0-2282-8618-4F5B-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_395_two_nests_nizdos_len": [
+        "EAEA0-29D8-21E1-CE57-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_401_person_gdonyos": [
+        "EAEA0-9B00-7568-8EAA-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_402_man_wiros": [
+        "EAEA0-A9B8-FCB4-30EC-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_410_her_name_anuman_gem": [
+        "EAEA0-1983-5528-D91F-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_410_in_name_anuman_nas": [
+        "EAEA0-7D2E-2489-453B-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_410_name_anuman": [
+        "EAEA0-F2B8-4680-E94E-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_442_son_makwos": [
+        "EAEA0-762C-DA23-8A33-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_447_friend_karants": [
+        "EAEA0-537C-D61D-4C05-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_461_god_deewos": [
+        "EAEA0-1DDD-5438-566F-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_462_heaven_nemos": [
+        "EAEA0-167E-3C4A-01AE-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_464_story_skwetlos": [
+        "EAEA0-D21A-C564-E8C1-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_464_story_skwetlos_lex2": [
+        "EAEA0-F2E7-B45C-C635-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_481_desire_swantos": [
+        "EAEA0-8E5E-F1B4-CF1D-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_491_strength_nertos": [
+        "EAEA0-3FA5-BA40-A9F4-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_493_side_toybos": [
+        "EAEA0-4221-4520-5F34-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_510_in_month_miins_nas": [
+        "EAEA0-B6C7-ED79-B44F-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_510_month_miins": [
+        "EAEA0-4D88-C60A-C0AB-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_510_two_months_miins_len": [
+        "EAEA0-E0F1-918C-2144-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_511_sun_suulis": [
+        "EAEA0-C0C2-7947-25F5-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_517_in_shadow_skaatom_nas": [
+        "EAEA0-7496-52EB-BDB2-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_517_shadow_skaatom": [
+        "EAEA0-292A-DE02-4E16-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_517_two_shadows_skaatom_len": [
+        "EAEA0-AF83-0291-23BD-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_524_sea_mori": [
+        "EAEA0-9DDE-C538-A2D1-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_541_fire_tenets": [
+        "EAEA0-84B1-74E5-2FD7-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_541_in_fire_tenets_nas": [
+        "EAEA0-6712-CBD3-5C1B-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_541_two_fires_tenets_len": [
+        "EAEA0-057D-4120-7726-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_543_ash_lowtus": [
+        "EAEA0-57CF-2A2F-46B9-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_552_her_soil_kwriiyets_gem": [
+        "EAEA0-D11D-8F33-9841-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_552_in_soil_kwriiyets_nas": [
+        "EAEA0-60F3-C40E-0333-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_552_soil_kwriiyets": [
+        "EAEA0-0CE7-903B-0CAC-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_562_silver_argantos": [
+        "EAEA0-5AC8-68AB-F77C-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_563_iron_isarnom": [
+        "EAEA0-F028-C4B3-62BC-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_563_iron_isarnom_lex2": [
+        "EAEA0-4663-21C9-FFE1-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_563_iron_isarnom_lex2_pron2": [
+        "EAEA0-853C-86D8-EC38-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_583_ice_yegi": [
+        "EAEA0-5438-3D2F-D6EE-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_583_ice_yegi_lex2": [
+        "EAEA0-709C-FED9-0693-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_585_wind_wintos": [
+        "EAEA0-E198-2169-7F5C-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_590_time_amsteraa": [
+        "EAEA0-72DD-EF01-04F4-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_592_thunder_torano": [
+        "EAEA0-CCEC-CC08-B212-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_592_thunder_torano_lex2": [
+        "EAEA0-D91F-8BEA-18F0-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_592_thunder_torano_lex3": [
+        "EAEA0-7D53-F792-B2FB-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_601_food_beetom": [
+        "EAEA0-1817-1F9E-8DCC-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_604_salt_salanos": [
+        "EAEA0-51EC-D6EE-DFEE-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_607_grain_graanom": [
+        "EAEA0-D403-BC6F-65E5-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_615_honey_meli": [
+        "EAEA0-DA41-AAC4-711E-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_619_apple_abalom": [
+        "EAEA0-60C9-D24E-D815-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_619_her_apple_abalom_gem": [
+        "EAEA0-8AAD-83D3-3040-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_619_two_apples_abalom_len": [
+        "EAEA0-8016-7088-5851-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_629_oak_derwos": [
+        "EAEA0-4914-70C9-6941-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_630_nut_knuus": [
+        "EAEA0-1F5B-A8DF-A6BE-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_631_tree_kwresnos": [
+        "EAEA0-08DB-8717-E4C4-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_632_flower_blaatus": [
+        "EAEA0-14D8-17CA-E754-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_634_willow_salixs": [
+        "EAEA0-08EE-AC46-B454-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_636_hazel_koslos": [
+        "EAEA0-05B0-9343-5B3F-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_637_blackberry_smeeros": [
+        "EAEA0-64BF-5B3E-1184-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_642_country_tiiros": [
+        "EAEA0-B6A1-C2FF-E513-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_645_her_island_enistii_gem": [
+        "EAEA0-8463-1308-EAB6-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_645_island_enistii": [
+        "EAEA0-C124-A5E1-4B70-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_645_two_islands_enistii_len": [
+        "EAEA0-134E-A048-643C-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_646_beach_traagis": [
+        "EAEA0-DEE3-6421-4994-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_647_wave_tundaa": [
+        "EAEA0-66DE-92CA-4954-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_651_her_house_tegos_gem": [
+        "EAEA0-170F-9BD9-898D-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_651_house_tegos": [
+        "EAEA0-D3FB-08F9-6046-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_651_two_houses_tegos_len": [
+        "EAEA0-2E77-B4DC-46F2-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_659_floor_laaro": [
+        "EAEA0-4B8E-F6A1-C203-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_661_bell_klokkos": [
+        "EAEA0-7CAB-F6BD-6ECB-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_672_belt_krissu": [
+        "EAEA0-1C77-62F5-6782-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_682_lying_legyos": [
+        "EAEA0-8EDB-C704-0E1F-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_695_taste_mlastos": [
+        "EAEA0-C01D-C045-D403-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_699_her_jump_lanxsman_gem": [
+        "EAEA0-C5C9-9673-670C-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_699_jump_lanxsman": [
+        "EAEA0-F8E7-A03B-CD5F-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_699_jump_lanxsman_lex2": [
+        "EAEA0-6DD1-6EE2-A7A3-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_699_two_jumps_lanxsman_len": [
+        "EAEA0-4C20-77B6-94A1-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_701_black_dubus": [
+        "EAEA0-4FBD-4148-E586-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_702_white_windos": [
+        "EAEA0-C99C-A28B-1A99-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_704_green_glastos": [
+        "EAEA0-021D-C0A8-E45C-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_706_grey_leetos": [
+        "EAEA0-F4B8-2E62-57C1-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_711_big_maaros": [
+        "EAEA0-7D0A-9E91-AA2B-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_712_high_owxselos": [
+        "EAEA0-8928-53FF-D24B-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_717_small_bekkos": [
+        "EAEA0-528F-22FD-22E9-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_736_thin_tanawyos": [
+        "EAEA0-A997-EAA7-DB84-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_739_wide_litanos": [
+        "EAEA0-E537-9DDA-E750-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_740_world_dubnos": [
+        "EAEA0-0E71-DA6D-427D-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_740_world_dubnos_lex2": [
+        "EAEA0-F43F-BF4C-0848-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_743_bitter_swerwos": [
+        "EAEA0-6191-77E8-83D5-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_746_rough_garwos": [
+        "EAEA0-F15D-CB5A-AA98-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_751_young_yowankos": [
+        "EAEA0-2031-A82B-92F6-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_752_old_senos": [
+        "EAEA0-1409-340A-D80D-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_757_blind_dallos": [
+        "EAEA0-7865-84B6-84CB-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_758_deaf_bodaros": [
+        "EAEA0-1E53-0A54-3DAB-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_759_bald_maylos": [
+        "EAEA0-EEF4-99F4-FA63-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_765_alive_biwos": [
+        "EAEA0-C7E6-46DC-5B52-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_766_dead_marwos": [
+        "EAEA0-BAA6-BDBE-D995-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_767_naked_noxtos": [
+        "EAEA0-D717-D91D-6852-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_772_bad_drukos": [
+        "EAEA0-85CA-8122-1CF5-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_774_true_wiiros": [
+        "EAEA0-E9AD-D7F1-4ADE-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_776_clean_glanos": [
+        "EAEA0-8EAE-AEE9-6566-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_781_first_kentu": [
+        "EAEA0-0B05-CB58-B40C-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_782_all_olyos": [
+        "EAEA0-B80A-B746-E849-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_782_all_olyos_lex2": [
+        "EAEA0-2795-1EFE-38D7-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_784_full_laanos": [
+        "EAEA0-AC89-0FAB-EE95-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_804_run_reto": [
+        "EAEA0-94E5-F73A-1334-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_830_swallow_slunko": [
+        "EAEA0-4587-F31C-C4D9-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_845_drowned_baadiito": [
+        "EAEA0-B062-7976-C33B-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_848_believe_kreddii": [
+        "EAEA0-FD30-B18E-86BA-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_906_speak_labaros": [
+        "EAEA0-CDEE-BF07-44C1-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_907_sing_kano": [
+        "EAEA0-6FEE-5599-8DCC-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_909_praised_maalato": [
+        "EAEA0-3DFD-A7B5-0D1B-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ]
 }

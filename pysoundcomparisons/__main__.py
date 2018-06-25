@@ -61,8 +61,21 @@ def write_translations(args):
 
 @command()
 def upload(args):
+    from pysoundcomparisons.mediacatalog import MediaCatalog
+    from pycdstar.api import Cdstar
+
     api = _api(args)
-    sfdir = api.repos / 'soundfiles'
+
+    with MediaCatalog(args.repos) as cat:
+        cat.add(
+            Cdstar(
+                service_url=os.environ['CDSTAR_URL'],
+                user=os.environ['CDSTAR_USER'],
+                password=os.environ['CDSTAR_PWD']),
+            args.args[0])
+
+    return
+
     with Catalog(
         sfdir / 'catalog.json',
         cdstar_url=os.environ['CDSTAR_URL'],
