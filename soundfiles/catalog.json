@@ -98822,5 +98822,21 @@
             "ogg",
             "wav"
         ]
+    ],
+    "Clt_Bryth_Wel_SE_West_Swansea_Dl_585_wind_wintos": [
+        "EAEA0-AC29-D0AA-364E-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_SE_West_Swansea_Dl_590_time_amsteraa": [
+        "EAEA0-5DB7-C7D4-AFE9-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
     ]
 }
