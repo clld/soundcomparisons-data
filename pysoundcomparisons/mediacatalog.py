@@ -61,7 +61,7 @@ class MediaCatalog(object):
             for f in files:
                 fmt = f.suffix[1:]
                 obj.add_bitstream(fname=str(f), name=fmt, mimetype=self.__mimetypes[fmt])
-                time.sleep(1.1)
+                time.sleep(1.2)
                 formats.append(fmt)
         except:  # noqa: E722
             obj.delete()
