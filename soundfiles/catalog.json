@@ -98838,5 +98838,45 @@
             "ogg",
             "wav"
         ]
+    ],
+    "Clt_Bryth_Wel_SE_West_Swansea_Dl_592_thunder_torano": [
+        "EAEA0-2562-C354-C232-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_SE_West_Swansea_Dl_601_food_beetom": [
+        "EAEA0-9C8D-7FDC-2E2A-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_SE_West_Swansea_Dl_604_salt_salanos": [
+        "EAEA0-E820-6B10-B39C-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_SE_West_Swansea_Dl_607_grain_graanom": [
+        "EAEA0-08B6-360B-2F21-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
+    ],
+    "Clt_Bryth_Wel_SE_West_Swansea_Dl_615_honey_meli": [
+        "EAEA0-B265-D840-9E4C-0",
+        [
+            "mp3",
+            "ogg",
+            "wav"
+        ]
     ]
 }
