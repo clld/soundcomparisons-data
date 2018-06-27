@@ -100,6 +100,7 @@ def main():  # pragma: no cover
         help="path to soundcomparisons-data repository",
         type=pathlib.Path,
         default=pathlib.Path(__file__).parent.parent)
+    parser.add_argument('--db-host', default='localhost')
     parser.add_argument('--db-name', default='soundcomparisons')
     parser.add_argument('--db-user', default='soundcomparisons')
     parser.add_argument('--db-password', default='pwd')
