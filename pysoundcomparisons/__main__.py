@@ -14,6 +14,7 @@ import sys
 import pathlib
 from collections import OrderedDict
 import json
+import codecs
 
 from clldutils.clilib import ArgumentParserWithLogging, command
 from clldutils.dsv import UnicodeWriter
@@ -110,6 +111,38 @@ def write_languages(args):
     _write_csv_to_file(data_db, 'languages.csv', api, header)
     _write_csv_to_file(study_lg_map_data, 'x_study_languages.csv', api, [
         'LanguageIx', 'StudyName'])
+
+
+@command()
+def write_valid_soundfilepaths(args):
+    """
+    Creates the file 'valid_soundfilepaths.txt' containig all valid
+    sound file paths based on database data.
+    """
+    db = _db(args)
+    all_studies = _get_all_study_names(db)
+    union_query_withstudy_array = []
+    for study in all_studies:
+        union_query_withstudy_array.append(
+            "SELECT *, '%s' AS Study FROM Languages_%s" % (study, study))
+
+    # make sure all studies will be concatenated
+    db("SET @@group_concat_max_len = 4096")
+    query = """SELECT DISTINCT FilePathPart, GROUP_CONCAT(Study) AS Studies 
+        FROM (%s) AS t GROUP BY FilePathPart""" % (
+        " UNION ".join(union_query_withstudy_array))
+    data = list(db(query))
+    valid_snd_file_names = set()
+    for row in data:
+        for s in row['Studies'].split(","):
+            q = "SELECT DISTINCT SoundFileWordIdentifierText FROM Words_%s" % (s)
+            d = list(db(q))
+            for r in d:
+                valid_snd_file_names.add(
+                    row['FilePathPart'] + "/" + row['FilePathPart'] + r['SoundFileWordIdentifierText'])
+    with codecs.open("valid_soundfilepaths.txt", "w", "utf-8-sig") as f:
+        f.write("\n".join(sorted(valid_snd_file_names)))
+        f.close()
 
 
 @command()
