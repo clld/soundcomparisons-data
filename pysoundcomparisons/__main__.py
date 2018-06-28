@@ -24,7 +24,7 @@ from pysoundcomparisons.db import DB
 
 
 def _db(args):
-    return DB(db=args.db_name, user=args.db_user, password=args.db_password)
+    return DB(host=args.db_host, db=args.db_name, user=args.db_user, password=args.db_password)
 
 
 def _api(args):
