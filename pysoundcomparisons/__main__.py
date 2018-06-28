@@ -16,6 +16,7 @@ from collections import OrderedDict
 import json
 
 from clldutils.clilib import ArgumentParserWithLogging, command
+from clldutils.dsv import UnicodeWriter
 from cdstarcat import Catalog
 
 from pysoundcomparisons.api import SoundComparisons
@@ -29,6 +30,86 @@ def _db(args):
 
 def _api(args):
     return SoundComparisons(repos=args.repos)
+
+
+def _get_all_study_names(db):
+    return [s['Name'] for s in list(db("select Name from Studies"))]
+
+
+def _write_csv_to_file(data, file_name, api, header=None, dir_name='cldf'):
+    outdir = api.repos.joinpath(dir_name)
+    if not outdir.exists():
+        outdir.mkdir()
+    if header is None:
+        try:
+            header = data.keys()
+        except AttributeError:
+            pass
+    with UnicodeWriter(outdir.joinpath(file_name)) as w:
+        if header is not None:
+            w.writerow(header)
+        for row in data:
+            w.writerow(row)
+
+
+@command()
+def write_languages(args):
+    """
+    Get all unique language data from all studies (Languages_*) and
+    write them into file 'languages.csv' and the mapping between
+    language and study into x_study_languages.csv'. Before writing files
+    it will be checked if any language data differ across studies.
+    """
+    db = _db(args)
+    api = _api(args)
+
+    all_studies = _get_all_study_names(db)
+    union_query_array = []
+    union_query_withstudy_array = []
+    for study in all_studies:
+        union_query_array.append("SELECT * FROM Languages_%s" % (study))
+        union_query_withstudy_array.append(
+            "SELECT *, '%s' AS Study FROM Languages_%s" % (study, study))
+
+    # first check for language uniqueness across studies
+    query = """SELECT DISTINCT LanguageIx, count(*) AS c FROM (%s) AS t
+        GROUP BY LanguageIx HAVING c > 1""" % (
+        " UNION ".join(union_query_array))
+    data = list(db(query))
+    if len(data) > 0:
+        print(
+            "\nData of these languages differ across studies - please clean up data first:")
+        for row in data:
+            print("\n")
+            for study in all_studies:
+                query = """SELECT LanguageIx, ShortName FROM Languages_%s
+                    WHERE LanguageIx = %s""" % (study, row['LanguageIx'])
+                qdata = list(db(query))
+                if len(qdata) > 0:
+                    print("LanguageIx = %s (%s) in study %s" % (
+                        qdata[0]['LanguageIx'], qdata[0]['ShortName'], study))
+        return
+
+    # make sure all studies will be concatenated
+    db("SET @@group_concat_max_len = 4096")
+    query = """SELECT DISTINCT *, GROUP_CONCAT(Study) AS Studies FROM (%s) AS t
+        GROUP BY LanguageIx""" % (" UNION ".join(union_query_withstudy_array))
+    data = db(query)
+    # header minus last two columns Study and Studies
+    header = data.keys()[:-2]
+
+    # go through each row, get mapping LanguageIx and Study and 
+    # delete the last two columns
+    data_db = list()
+    study_lg_map_data = list()
+    for row in data:
+        data_db.append(row[:-2])
+        for s in row['Studies'].split(","):
+            study_lg_map_data.append([row['LanguageIx'], s])
+
+    _write_csv_to_file(data_db, 'languages.csv', api, header)
+    _write_csv_to_file(study_lg_map_data, 'x_study_languages.csv', api, [
+        'LanguageIx', 'StudyName'])
 
 
 @command()
