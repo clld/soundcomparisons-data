@@ -128,18 +128,44 @@ def write_valid_soundfilepaths(args):
 
     # make sure all studies will be concatenated
     db("SET @@group_concat_max_len = 4096")
-    query = """SELECT DISTINCT FilePathPart, GROUP_CONCAT(Study) AS Studies 
+    query = """SELECT DISTINCT FilePathPart, LanguageIx, GROUP_CONCAT(Study) AS Studies
         FROM (%s) AS t GROUP BY FilePathPart""" % (
         " UNION ".join(union_query_withstudy_array))
     data = list(db(query))
     valid_snd_file_names = set()
     for row in data:
         for s in row['Studies'].split(","):
-            q = "SELECT DISTINCT SoundFileWordIdentifierText FROM Words_%s" % (s)
+            q = """SELECT DISTINCT 
+                SoundFileWordIdentifierText, IxElicitation, IxMorphologicalInstance
+                FROM Words_%s""" % (s)
             d = list(db(q))
             for r in d:
-                valid_snd_file_names.add(
-                    row['FilePathPart'] + "/" + row['FilePathPart'] + r['SoundFileWordIdentifierText'])
+                q2 = """SELECT DISTINCT
+                    AlternativePhoneticRealisationIx AS P, AlternativeLexemIx AS L FROM Transcriptions_%s
+                    WHERE LanguageIx = %s
+                    AND IxElicitation = %s
+                    AND IxMorphologicalInstance = %s""" % (
+                        s, row['LanguageIx'], r['IxElicitation'], r['IxMorphologicalInstance'])
+                d2 = list(db(q2))
+                fileNamePrefix = row['FilePathPart'] + "/" + row['FilePathPart'] + r['SoundFileWordIdentifierText']
+                valid_snd_file_names.add(fileNamePrefix)
+                existsBasis = False
+                for t in d2:
+                    if t['P'] == 1 or t['L'] == 1:
+                        print("check %s = %s IxElic %s for AltPhon |& AltLex = 1" % (
+                            row['LanguageIx'], row['FilePathPart'], r['IxElicitation']))
+                    if t['P'] == 0 and t['L'] == 0:
+                        existsBasis = True
+                    if t['P'] == 0 and t['L'] > 1:
+                        valid_snd_file_names.add(fileNamePrefix + "_lex%s" % (t['L']))
+                    elif t['P'] > 1 and t['L'] > 1:
+                        valid_snd_file_names.add(fileNamePrefix + "_lex%s_pron%s" % (t['L'], t['P']))
+                    elif t['P'] > 1 and t['L'] == 0:
+                        valid_snd_file_names.add(fileNamePrefix + "_pron%s" % (t['P']))
+                # if not existsBasis:
+                #     print("check %s = %s IxElic %s no AltPhon = AltLex = 0" % (
+                #         row['LanguageIx'], row['FilePathPart'], r['IxElicitation']))
+
     with codecs.open("valid_soundfilepaths.txt", "w", "utf-8-sig") as f:
         f.write("\n".join(sorted(valid_snd_file_names)))
         f.close()
