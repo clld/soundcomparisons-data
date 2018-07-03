@@ -112,6 +112,29 @@ def write_languages(args):
     _write_csv_to_file(study_lg_map_data, 'x_study_languages.csv', api, [
         'LanguageIx', 'StudyName'])
 
+@command()
+def write_valid_soundfolders(args):
+    """
+    Creates the file 'valid_soundfolderrs.txt' containing all valid
+    sound file folder based on database data. With the command line
+    option --only-for-study <STUDY_NAME> the output file will list only
+    those folder names which are relevant for STUDY_NAME.
+    """
+    db = _db(args)
+    all_studies = _get_all_study_names(db)
+    if args.only_for_study is not None and args.only_for_study in all_studies:
+        all_studies = [args.only_for_study]
+    valid_folders = set()
+    for s in all_studies:
+        q = "SELECT DISTINCT FilePathPart FROM Languages_%s" % (s)
+        data = list(db(q))
+        if len(data) > 0:
+            for row in data:
+                valid_folders.add(row['FilePathPart'])
+    with codecs.open("valid_soundfolders.txt", "w", "utf-8-sig") as f:
+        f.write("\n".join(sorted(valid_folders)))
+        f.close()
+
 
 @command()
 def write_valid_soundfilepaths(args):
@@ -244,6 +267,7 @@ def main():  # pragma: no cover
     parser.add_argument('--db-name', default='soundcomparisons')
     parser.add_argument('--db-user', default='soundcomparisons')
     parser.add_argument('--db-password', default='pwd')
+    parser.add_argument('--only-for-study', default=None)
     sys.exit(parser.main())
 
 
