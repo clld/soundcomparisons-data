@@ -16,14 +16,23 @@ from collections import OrderedDict
 import json
 import codecs
 
+import re
+from pathlib import Path
+from clldutils import jsonlib
+
+try:
+    # For Python 3.0 and later
+    from urllib.request import urlopen
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import urlopen
+
 from clldutils.clilib import ArgumentParserWithLogging, command
 from clldutils.dsv import UnicodeWriter
 from cdstarcat import Catalog
 
 from pysoundcomparisons.api import SoundComparisons
 from pysoundcomparisons.db import DB
-
-
 
 def _db(args):
     return DB(host=args.db_host, db=args.db_name, user=args.db_user, password=args.db_password)
@@ -52,6 +61,165 @@ def _write_csv_to_file(data, file_name, api, header=None, dir_name='cldf'):
         for row in data:
             w.writerow(row)
 
+def _get_jsonparsed_data(url):
+    """
+    Receive the content of url, parse it as JSON and return the object.
+    """
+    repsonse = None
+    try:
+        response = urlopen(url)
+        if response is None:
+            return None
+        data = response.read().decode("utf-8")
+        return json.loads(data)
+    except:
+        return None
+
+@command()
+def write_modified_soundfiles(args):
+"""
+Creates the file 'modified.json' in folder 'soundfiles' which contains the following keys:
+• 'new': paths on soundcomparisons.com which are not on cdstar
+• 'modified': paths on cdstar whose source on soundcomparisons.com had changed
+• 'obsolete': paths on cdstar which are not on soundcomparisons.com and not valid paths
+• 'check': paths on cdstar which are not on soundcomparisons.com BUT VALID paths
+    [paths which are probably deleted by mistake on soundcomparisons.com ]
+- files needed before execution:
+• 'ServerSndFilesChecksums.txt' in 'pysoundcomparisons' - generate via:
+    find /srv/soundcomparisons/site/sound/ -iname "*[.wav\\|.mp3\\|.ogg]" -type f -exec md5sum {} \\; > ServerSndFilesChecksums.txt
+  at soundcomparisons.com server
+• 'valid_soundfilepaths.txt' in 'pysoundcomparisons' - generate via 'write_valid_soundfilepaths'
+"""
+
+    api = _api(args)
+
+    catalog_items = {}
+    return_data = {}
+    return_new = set()
+    return_modified = {}
+    return_obsolete = {}
+    return_check = {}
+    cdstar_object_metadata = {}
+    valid_soundfilepaths = []
+    server_md5_items = set()
+
+    valid_soundfilepaths_filepath = api.repos.joinpath(
+        'valid_soundfilepaths.txt')
+    if valid_soundfilepaths_filepath.exists():
+        with open(valid_soundfilepaths_filepath) as fp:
+            line = fp.readline().strip()
+            while line:
+                lineArray = line.split("/")
+                if len(lineArray) > 0:
+                    valid_soundfilepaths.append(lineArray[-1])
+                line = fp.readline().strip()
+
+    catalog_filepath = api.repos.joinpath(
+        '..', 'soundfiles', 'catalog.json')
+    if catalog_filepath.exists():
+        catalog_items = jsonlib.load(catalog_filepath)
+    else:
+        print("File path {} does not exist.".format(catalog_filepath))
+        return return_data
+
+    server_md5_filepath = api.repos.joinpath(
+        '..', 'soundfiles', 'ServerSndFilesChecksums.txt')
+    if not os.path.isfile(server_md5_filepath):
+        print("File path {} does not exist. Please generate it first.".format(server_md5_filepath))
+        return return_data
+
+    # Load cached metadata in order to minimize cdstar server lookups
+    # If not desired simply delete or rename catalog_metatdata.json
+    cdstar_object_metadata_filepath = api.repos.joinpath(
+        '..', 'soundfiles', 'catalog_metatdata.json')
+    if cdstar_object_metadata_filepath.exists():
+        cdstar_object_metadata = jsonlib.load(cdstar_object_metadata_filepath)
+
+    cnt = 1
+    with open(server_md5_filepath) as fp:
+        line = fp.readline().strip()
+        while line:
+            (md5, sffolder, sfpath, ext) = re.match(
+                r"^(.*?)  .*/([^/]+?)/([^/]+?)\.(.*)", line).groups()
+            server_md5_items.add(sfpath)
+            # if sfpath.startswith("Oce_"):
+            if sfpath in catalog_items:
+                meta_obj = None
+                if sfpath in cdstar_object_metadata:
+                    meta_obj = cdstar_object_metadata[sfpath]
+                else:
+                    meta_obj = _get_jsonparsed_data(
+                        "http://cdstar.shh.mpg.de/objects/%s" % (catalog_items[sfpath][0])
+                    )['bitstream']
+                    if meta_obj is None:
+                        with open(cdstar_object_metadata_filepath, 'w') as f:
+                            json.dump(cdstar_object_metadata, f, indent=4)
+                        print("HTTP Error - wait a sec and rerun the command")
+                        sys.exit()
+                    else:
+                        cdstar_object_metadata[sfpath] = meta_obj
+                if meta_obj is not None:
+                    check_sf = "%s.%s" % (sfpath, ext)
+                    found = False
+                    for sf in meta_obj:
+                        if sf['bitstreamid'] == check_sf:
+                            found = True
+                            if sf['checksum'] == md5:
+                                pass
+                            else:
+                                if catalog_items[sfpath][0] not in return_modified:
+                                    return_modified[catalog_items[sfpath][0]] = []
+                                return_modified[catalog_items[sfpath][0]].append(
+                                    "%s/%s" % (sffolder, check_sf)
+                                    )
+                            break
+                    if not found and sfpath in valid_soundfilepaths:
+                        return_new.add("%s/%s" % (sffolder, check_sf))
+                else:
+                    print("Error while processing %s for %s" % (
+                        sfpath, catalog_items[sfpath][0]), flush=True)
+            else:
+                if sfpath in valid_soundfilepaths:
+                    return_new.add("%s/%s" % (sffolder, sfpath))
+
+            cnt += 1
+            if not cnt % 10000:
+                # Save metadata cache in case cdstar request fails
+                # to avoid querying again
+                with open(cdstar_object_metadata_filepath, 'w') as f:
+                    json.dump(cdstar_object_metadata, f, indent=4)
+
+            line = fp.readline().strip()
+
+    # Save metadata cache
+    with open(cdstar_object_metadata_filepath, 'w') as f:
+        json.dump(cdstar_object_metadata, f, indent=4)
+
+    # Check if there are items in catalog.json
+    # which are not listed in ServerSndFilesChecksums.txt 
+    # and distinguish between valid paths.
+    # 'obsolete' objects could be deleted, 'check' data are valid on cdstar 
+    #   but not on soundcomparisons.com !
+    for k in catalog_items.keys():
+        if k not in server_md5_items:
+            if k in valid_soundfilepaths:
+                if catalog_items[k][0] not in return_check:
+                    return_check[catalog_items[k][0]] = []
+                return_check[catalog_items[k][0]].append(k)
+            else:
+                if catalog_items[k][0] not in return_obsolete:
+                    return_obsolete[catalog_items[k][0]] = []
+                return_obsolete[catalog_items[k][0]].append(k)
+
+    return_data = {
+        'new': sorted(return_new),
+        'modified': return_modified,
+        'obsolete': return_obsolete,
+        'check': return_check
+    }
+
+    with open(api.repos.joinpath('..', 'soundfiles', 'modified.json'), 'w') as f:
+        json.dump(return_data, f, indent=4)
 
 @command()
 def write_languages(args):
