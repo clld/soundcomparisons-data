@@ -15,6 +15,10 @@ import pathlib
 from collections import OrderedDict
 import json
 import codecs
+import shutil
+import errno
+import requests
+import zipfile
 
 import re
 from pathlib import Path
@@ -75,21 +79,189 @@ def _get_jsonparsed_data(url):
     except:
         return None
 
+def _delete_folder(path):
+    pth = Path(path)
+    for sub in pth.iterdir():
+        if sub.is_dir():
+            _delete_folder(sub)
+        else:
+            sub.unlink()
+    pth.rmdir()
+
+def _copy_path(src, dest):
+    try:
+        shutil.copytree(src, dest)
+    except OSError as e:
+        # If the error was caused due to the source wasn't a folder
+        # then copy a file
+        if e.errno == errno.ENOTDIR:
+            shutil.copy(src, dest)
+        else:
+            print('Directory not copied. Error: %s' % e)
+
+def _copy_save_url(url, query, dest, file_path, api):
+    response = None
+    try:
+        response = urlopen(url + "/" + query)
+    except:
+        _delete_folder(outPath)
+        print("Please check first argument or connection for a valid URL %s" % (query))
+        return False
+    if response is None:
+        _delete_folder(outPath)
+        print("Please check first argument or connection for a valid URL %s" % (query))
+        return False
+    with open(api.repos.joinpath(dest, file_path), "wb") as output:
+        output.write(response.read())
+    return True
+
+def _fetch_save_scdata_json(url, dest, file_path, prefix, api):
+    data = requests.get(url).json()
+    r = re.compile(r"http://cdstar[^/]*?/[^/]*?/[^/]*?/((.*?)_\d{3,}.*?\.)")
+    with open(api.repos.joinpath(dest, "data", file_path + ".js"), "w") as output:
+        output.write(prefix + r.sub(r"sound/\g<2>/\g<1>", json.dumps(data, separators=(',', ':'))))
+    return data
+
+
+@command()
+def create_offline_version(args):
+    """
+    Creates sndComp_offline.zip without map tile files and (as default) without sound files.
+    Usage:
+      --sc-host --sc-repo createOfflineVersion
+        sc-host: URL to soundcomparisons - default http://www.soundcomaprisons.com
+        sc-repo: path to local Sound-Comparisons github repository - default './../../../Sound-Comparisons'
+
+    Optional arguments (not yet implemented coming soon...)
+      with_online_soundpaths  - use online cdstar sound paths instead of local ones (mainly for testing)
+      all_sounds  - creates the sound folder and copy all mp3 and ogg sound files
+      [any_stduy_name]  - creates the sound folder and copy all mp3 and ogg sound files of the passed study or studies
+    """
+
+    api = _api(args)
+
+    outPath = "sndComp_offline"
+    homeURL = args.sc_host
+    baseURL = homeURL + "/query"
+    sndCompRepoPath = args.sc_repo
+    if (not os.path.exists(sndCompRepoPath)):
+        print("Please check second argument '%s' for a valid Sound-Comparisons repository path."
+            % (sndCompRepoPath))
+        return
+
+    # create folder structure
+    if (os.path.exists(outPath)):
+        _delete_folder(outPath)
+    os.makedirs(outPath)
+    os.makedirs(api.repos.joinpath(outPath, "data"))
+    os.makedirs(api.repos.joinpath(outPath, "js"))
+    os.makedirs(api.repos.joinpath(outPath, "js", "extern"))
+
+    # copy from repo all necessary static files
+    _copy_path(api.repos.joinpath(sndCompRepoPath, "site", "css"), api.repos.joinpath(outPath, "css"))
+    _copy_path(api.repos.joinpath(sndCompRepoPath, "site", "img"), api.repos.joinpath(outPath, "img"))
+    _copy_path(api.repos.joinpath(
+        sndCompRepoPath, "site", "js", "extern", "FileSaver.js"),
+        api.repos.joinpath(outPath, "js", "extern"))
+    _copy_path(api.repos.joinpath(sndCompRepoPath, "LICENSE"), outPath)
+    _copy_path(api.repos.joinpath(sndCompRepoPath, "README.md"), outPath)
+
+    # create index.html - handle and copy the main App.js file
+    response = None
+    minifiedKey = ""
+    try:
+        response = urlopen(homeURL + "/index.html")
+    except:
+        _delete_folder(outPath)
+        print("Please check first argument or connection for a valid URL (index.html)")
+        return
+    if response is None:
+        _delete_folder(outPath)
+        print("Please check first argument or connection for a valid URL (index.html)")
+        return
+    with open(api.repos.joinpath(outPath, "index.html"), "w") as output:
+        data = response.read().decode("utf-8").splitlines(True)
+        p = re.compile("(.*?)(App\\-minified)\\.(.*?)(\\.js)(.*)")
+        for line in data:
+            if p.match(line):
+                g = p.match(line).groups()
+                if not len(g) == 5:
+                    _delete_folder(outPath)
+                    print("Error while parsing index.html")
+                    return
+                output.write(g[0] + g[1] + g[3] + g[4] + "\n")
+                minifiedKey = g[2]
+            else:
+                output.write(line)
+    if not len(minifiedKey):
+        _delete_folder(outPath)
+        print("Error while getting minified key in index.html")
+        return
+    _copy_save_url(homeURL, "js/App-minified." + minifiedKey + ".js", outPath,
+        api.repos.joinpath("js", "App-minified.js"), api)
+
+    # get data global json
+    _fetch_save_scdata_json(baseURL + "/data", outPath, "data", "var localData=", api)
+    global_data = _fetch_save_scdata_json(
+        baseURL + "/data?global", outPath, "data_global", "var localDataGlobal=", api)
+
+    # get all study names out of global_data and query all relevant json files
+    # and save them as valid javascript files which can be loaded via <script>...</script>
+    all_studies = []
+    try:
+        all_studies = global_data['studies']
+    except:
+        _delete_folder(outPath)
+        print("Error while getting all studies from global json.")
+        return
+
+    for s in all_studies:
+        if(s != '--'): # skip delimiters
+            _fetch_save_scdata_json(baseURL + "/data?study=" + s, outPath,
+                "data_study_" + s, "var localDataStudy" + s + "=", api)
+
+    # Providing translation files:
+    tdata = _fetch_save_scdata_json(
+        baseURL + "/translations?action=summary", outPath,
+        "translations_action_summary", "var localTranslationsActionSummary=", api);
+    # Combined translations map for all BrowserMatch:
+    lnames = []
+    for k in tdata.keys():
+        lnames.append(tdata[k]['BrowserMatch'])
+    _fetch_save_scdata_json(
+            baseURL + "/translations?lng=" + "+".join(lnames) + "&ns=translation", outPath,
+            "translations_i18n", "var localTranslationsI18n=", api);
+
+    # create the zip archive
+    try:
+        zipf = zipfile.ZipFile(outPath + ".zip", "w", zipfile.ZIP_DEFLATED)
+        fp = os.path.join(outPath, "..")
+        for root, dirs, files in os.walk(outPath):
+            for f in files:
+                if not f.startswith(".") and not f.startswith("__"): # mainly for macOSX hidden files
+                    zipf.write(os.path.relpath(os.path.join(root, f), fp))
+        zipf.close()
+        _delete_folder(outPath)
+        print("done")
+    except Exception as e:
+        print("Something went wrong while creating the zip archive.")
+        print(e)
+
 @command()
 def write_modified_soundfiles(args):
-"""
-Creates the file 'modified.json' in folder 'soundfiles' which contains the following keys:
-• 'new': paths on soundcomparisons.com which are not on cdstar
-• 'modified': paths on cdstar whose source on soundcomparisons.com had changed
-• 'obsolete': paths on cdstar which are not on soundcomparisons.com and not valid paths
-• 'check': paths on cdstar which are not on soundcomparisons.com BUT VALID paths
-    [paths which are probably deleted by mistake on soundcomparisons.com ]
-- files needed before execution:
-• 'ServerSndFilesChecksums.txt' in 'pysoundcomparisons' - generate via:
-    find /srv/soundcomparisons/site/sound/ -iname "*[.wav\\|.mp3\\|.ogg]" -type f -exec md5sum {} \\; > ServerSndFilesChecksums.txt
-  at soundcomparisons.com server
-• 'valid_soundfilepaths.txt' in 'pysoundcomparisons' - generate via 'write_valid_soundfilepaths'
-"""
+    """
+    Creates the file 'modified.json' in folder 'soundfiles' which contains the following keys:
+    • 'new': paths on soundcomparisons.com which are not on cdstar
+    • 'modified': paths on cdstar whose source on soundcomparisons.com had changed
+    • 'obsolete': paths on cdstar which are not on soundcomparisons.com and not valid paths
+    • 'check': paths on cdstar which are not on soundcomparisons.com BUT VALID paths
+        [paths which are probably deleted by mistake on soundcomparisons.com ]
+    - files needed before execution:
+    • 'ServerSndFilesChecksums.txt' in 'pysoundcomparisons' - generate via:
+        find /srv/soundcomparisons/site/sound/ -iname "*[.wav\\|.mp3\\|.ogg]" -type f -exec md5sum {} \\; > ServerSndFilesChecksums.txt
+      at soundcomparisons.com server
+    • 'valid_soundfilepaths.txt' in 'pysoundcomparisons' - generate via 'write_valid_soundfilepaths'
+    """
 
     api = _api(args)
 
@@ -435,6 +607,12 @@ def main():  # pragma: no cover
     parser.add_argument('--db-name', default='soundcomparisons')
     parser.add_argument('--db-user', default='soundcomparisons')
     parser.add_argument('--db-password', default='pwd')
+    parser.add_argument('--sc-host', default='http://www.soundcomparisons.com')
+    parser.add_argument('--sc-repo',
+        type=pathlib.Path,
+        default=os.path.join(
+            pathlib.Path(__file__).resolve().parent.parent.parent,
+            'Sound-Comparisons'))
     parser.add_argument('--only-for-study', default=None)
     sys.exit(parser.main())
 
