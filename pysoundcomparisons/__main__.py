@@ -142,10 +142,14 @@ def create_offline_version(args):
         sc-host: URL to soundcomparisons - default http://www.soundcomaprisons.com
         sc-repo: path to local Sound-Comparisons github repository - default './../../../Sound-Comparisons'
 
-    Optional arguments (not yet implemented coming soon...)
+    Optional arguments:
       with_online_soundpaths  - use online cdstar sound paths instead of local ones (mainly for testing)
-      all_sounds  - creates the sound folder and copy all mp3 and ogg sound files
-      [any_stduy_name]  - creates the sound folder and copy all mp3 and ogg sound files of the passed study or studies
+
+      all_sounds  - creates the sound folder and copy all mp3 and ogg sound files (../soundfiles/catalog.json is needed)
+
+      [any_study_name]  - creates the sound folder and copy all mp3 and ogg sound files of the passed study or studies
+           (../soundfiles/catalog.json is needed)
+
     """
 
     api = _api(args)
@@ -161,6 +165,7 @@ def create_offline_version(args):
         print("Please check --sc-repo argument '%s' for a valid Sound-Comparisons repository path."
             % (sndCompRepoPath))
         return
+    sound_file_folders = {}
 
     # create folder structure
     if (os.path.exists(outPath)):
@@ -249,8 +254,57 @@ def create_offline_version(args):
     for s in all_studies:
         if(s != '--'): # skip delimiters
             print("  %s ..." % (s), flush=True)
-            _fetch_save_scdata_json(baseURL + "/data?study=" + s, outPath,
+            d = _fetch_save_scdata_json(baseURL + "/data?study=" + s, outPath,
                 "data_study_" + s, "var localDataStudy" + s + "=", api, with_online_soundpaths)
+            # save all languages > FilePathPart for downloading sounds later on
+            sound_file_folders[s] = []
+            for lg in d['languages']:
+                sound_file_folders[s].append(lg['FilePathPart'])
+
+    # check if user passed desired stuy names for sounds
+    desired_sounds = []
+    if "all_sounds" in args.args:
+        desired_sounds = list(all_studies)
+        # delete all separators
+        desired_sounds = [x for x in desired_sounds if x != "--"]
+    else:
+        for arg in args.args:
+            if arg in all_studies:
+                desired_sounds.append(arg)
+            elif arg not in ["all_sounds"]:
+                    print("argument '%s' is not a valid study name - will be ignored" % (arg))
+    # download all mp3 and ogg sound files for studies in desired_sounds list
+    # and store them in /sound folder
+    catalog_filepath = api.repos.joinpath(
+        '..', 'soundfiles', 'catalog.json')
+    if catalog_filepath.exists():
+        catalog_items = jsonlib.load(catalog_filepath)
+    else:
+        shutil.rmtree(outPath)
+        print("File path {} does not exist.".format(catalog_filepath))
+        return
+    for study in desired_sounds:
+        if study not in sound_file_folders.keys():
+            print("No FilePathPart info found for study %s -- will be ignored" % (study))
+            next
+        if not os.path.exists(api.repos.joinpath(outPath, "sound")):
+            os.makedirs(api.repos.joinpath(outPath, "sound"))
+        # get all cdstar sound file paths and download them
+        cdstar_paths = []
+        for sffolder in sound_file_folders[study]:
+            print("download sound files for %s ..." % (sffolder), flush=True)
+            if not os.path.exists(api.repos.joinpath(outPath, "sound", sffolder)):
+                os.makedirs(api.repos.joinpath(outPath, "sound", sffolder))
+            for k, v in catalog_items.items():
+                if k.startswith(sffolder + "_"):
+                    for ext in v[1]:
+                        if ext != "wav":
+                            cdstar_paths.append("%s/%s.%s" % (v[0], k, ext))
+                            _copy_save_url("http://cdstar.shh.mpg.de/bitstreams",
+                                "%s/%s.%s" % (v[0], k, ext),
+                                outPath,
+                                api.repos.joinpath("sound", sffolder, "%s.%s" % (k, ext)), api)
+
 
     # create the zip archive
     print("creating ZIP archive ...", flush=True)
