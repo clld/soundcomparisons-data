@@ -80,6 +80,9 @@ def _get_jsonparsed_data(url):
         return None
 
 def _copy_path(src, dest):
+    """
+    copy an entire folder or a single file from src to dest
+    """
     try:
         shutil.copytree(src, dest)
     except OSError as e:
@@ -91,23 +94,35 @@ def _copy_path(src, dest):
             print('Directory not copied. Error: %s' % e)
 
 def _copy_save_url(url, query, dest, file_path, api):
+    """
+    download the content of the URL url + "/" + query and save that content to dest/file_path
+    """
     response = None
     try:
         response = urlopen(url + "/" + query)
     except:
         shutil.rmtree(outPath)
-        print("Please check first argument or connection for a valid URL %s" % (query))
+        print("Please check --sc-host argument or connection for a valid URL %s" % (query))
         return False
     if response is None:
         shutil.rmtree(outPath)
-        print("Please check first argument or connection for a valid URL %s" % (query))
+        print("Please check --sc-host argument or connection for a valid URL %s" % (query))
         return False
     with open(api.repos.joinpath(dest, file_path), "wb") as output:
         output.write(response.read())
     return True
 
 def _fetch_save_scdata_json(url, dest, file_path, prefix, api):
+    """
+    get a Sound-Comparisons data JSON object from url and save that object as valid JavaScript
+    file at dest/file_path prefixed by prefix -- in addition replace cdstar sound file urls by
+    local relativ paths (if desired)
+    """
     data = requests.get(url).json()
+    # regex for replacing all soundPaths having http://cdstar.shh.mpg.de/bitstreams/{UID}/{soundPath}
+    # by relative URL sound/{languageFilePath}/{soundPath}
+    # {languageFilePath} is parsed via the fact that each {soundPath} begins with the
+    # {languageFilePath} and can be cut at the occurrance of a _ followed by at least three digits: _\d{3,}
     r = re.compile(r"http://cdstar[^/]*?/[^/]*?/[^/]*?/((.*?)_\d{3,}.*?\.)")
     with open(api.repos.joinpath(dest, "data", file_path + ".js"), "w") as output:
         output.write(prefix + r.sub(r"sound/\g<2>/\g<1>", json.dumps(data, separators=(',', ':'))))
@@ -136,7 +151,7 @@ def create_offline_version(args):
     baseURL = homeURL + "/query"
     sndCompRepoPath = args.sc_repo
     if (not os.path.exists(sndCompRepoPath)):
-        print("Please check second argument '%s' for a valid Sound-Comparisons repository path."
+        print("Please check --sc-repo argument '%s' for a valid Sound-Comparisons repository path."
             % (sndCompRepoPath))
         return
 
@@ -149,6 +164,7 @@ def create_offline_version(args):
     os.makedirs(api.repos.joinpath(outPath, "js", "extern"))
 
     # copy from repo all necessary static files
+    print("copying static files ...", flush=True)
     _copy_path(api.repos.joinpath(sndCompRepoPath, "site", "css"), api.repos.joinpath(outPath, "css"))
     _copy_path(api.repos.joinpath(sndCompRepoPath, "site", "img"), api.repos.joinpath(outPath, "img"))
     _copy_path(api.repos.joinpath(
@@ -158,20 +174,22 @@ def create_offline_version(args):
     _copy_path(api.repos.joinpath(sndCompRepoPath, "README.md"), outPath)
 
     # create index.html - handle and copy the main App.js file
+    print("creating index.html ...", flush=True)
     response = None
     minifiedKey = ""
     try:
         response = urlopen(homeURL + "/index.html")
     except:
         shutil.rmtree(outPath)
-        print("Please check first argument or connection for a valid URL (index.html)")
+        print("Please check --sc-host argument or connection for a valid URL (index.html)")
         return
     if response is None:
         shutil.rmtree(outPath)
-        print("Please check first argument or connection for a valid URL (index.html)")
+        print("Please check --sc-host argument or connection for a valid URL (index.html)")
         return
     with open(api.repos.joinpath(outPath, "index.html"), "w") as output:
         data = response.read().decode("utf-8").splitlines(True)
+        # try to find App-minified.KEY.js's key, if found delete it and store the key
         p = re.compile("(.*?)(App\\-minified)\\.(.*?)(\\.js)(.*)")
         for line in data:
             if p.match(line):
@@ -188,28 +206,15 @@ def create_offline_version(args):
         shutil.rmtree(outPath)
         print("Error while getting minified key in index.html")
         return
+    # copy App-minified.js without key
     _copy_save_url(homeURL, "js/App-minified." + minifiedKey + ".js", outPath,
         api.repos.joinpath("js", "App-minified.js"), api)
 
     # get data global json
+    print("getting global data from sc-host ...", flush=True)
     _fetch_save_scdata_json(baseURL + "/data", outPath, "data", "var localData=", api)
     global_data = _fetch_save_scdata_json(
         baseURL + "/data?global", outPath, "data_global", "var localDataGlobal=", api)
-
-    # get all study names out of global_data and query all relevant json files
-    # and save them as valid javascript files which can be loaded via <script>...</script>
-    all_studies = []
-    try:
-        all_studies = global_data['studies']
-    except:
-        shutil.rmtree(outPath)
-        print("Error while getting all studies from global json.")
-        return
-
-    for s in all_studies:
-        if(s != '--'): # skip delimiters
-            _fetch_save_scdata_json(baseURL + "/data?study=" + s, outPath,
-                "data_study_" + s, "var localDataStudy" + s + "=", api)
 
     # Providing translation files:
     tdata = _fetch_save_scdata_json(
@@ -223,7 +228,25 @@ def create_offline_version(args):
             baseURL + "/translations?lng=" + "+".join(lnames) + "&ns=translation", outPath,
             "translations_i18n", "var localTranslationsI18n=", api);
 
+    # get all study names out of global_data and query all relevant json files
+    # and save them as valid javascript files which can be loaded via <script>...</script>
+    print("getting study data from sc-host ...", flush=True)
+    all_studies = []
+    try:
+        all_studies = global_data['studies']
+    except:
+        shutil.rmtree(outPath)
+        print("Error while getting all studies from global json.")
+        return
+
+    for s in all_studies:
+        if(s != '--'): # skip delimiters
+            print("  %s ..." % (s), flush=True)
+            _fetch_save_scdata_json(baseURL + "/data?study=" + s, outPath,
+                "data_study_" + s, "var localDataStudy" + s + "=", api)
+
     # create the zip archive
+    print("creating ZIP archive ...", flush=True)
     try:
         zipf = zipfile.ZipFile(outPath + ".zip", "w", zipfile.ZIP_DEFLATED)
         fp = os.path.join(outPath, "..")
@@ -233,10 +256,10 @@ def create_offline_version(args):
                     zipf.write(os.path.relpath(os.path.join(root, f), fp))
         zipf.close()
         shutil.rmtree(outPath)
-        print("done")
+        print("Done")
     except Exception as e:
         print("Something went wrong while creating the zip archive.")
-        print(e)
+        raise
 
 @command()
 def write_modified_soundfiles(args):
