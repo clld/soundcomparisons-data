@@ -79,15 +79,6 @@ def _get_jsonparsed_data(url):
     except:
         return None
 
-def _delete_folder(path):
-    pth = Path(path)
-    for sub in pth.iterdir():
-        if sub.is_dir():
-            _delete_folder(sub)
-        else:
-            sub.unlink()
-    pth.rmdir()
-
 def _copy_path(src, dest):
     try:
         shutil.copytree(src, dest)
@@ -104,11 +95,11 @@ def _copy_save_url(url, query, dest, file_path, api):
     try:
         response = urlopen(url + "/" + query)
     except:
-        _delete_folder(outPath)
+        shutil.rmtree(outPath)
         print("Please check first argument or connection for a valid URL %s" % (query))
         return False
     if response is None:
-        _delete_folder(outPath)
+        shutil.rmtree(outPath)
         print("Please check first argument or connection for a valid URL %s" % (query))
         return False
     with open(api.repos.joinpath(dest, file_path), "wb") as output:
@@ -151,7 +142,7 @@ def create_offline_version(args):
 
     # create folder structure
     if (os.path.exists(outPath)):
-        _delete_folder(outPath)
+        shutil.rmtree(outPath)
     os.makedirs(outPath)
     os.makedirs(api.repos.joinpath(outPath, "data"))
     os.makedirs(api.repos.joinpath(outPath, "js"))
@@ -172,11 +163,11 @@ def create_offline_version(args):
     try:
         response = urlopen(homeURL + "/index.html")
     except:
-        _delete_folder(outPath)
+        shutil.rmtree(outPath)
         print("Please check first argument or connection for a valid URL (index.html)")
         return
     if response is None:
-        _delete_folder(outPath)
+        shutil.rmtree(outPath)
         print("Please check first argument or connection for a valid URL (index.html)")
         return
     with open(api.repos.joinpath(outPath, "index.html"), "w") as output:
@@ -186,7 +177,7 @@ def create_offline_version(args):
             if p.match(line):
                 g = p.match(line).groups()
                 if not len(g) == 5:
-                    _delete_folder(outPath)
+                    shutil.rmtree(outPath)
                     print("Error while parsing index.html")
                     return
                 output.write(g[0] + g[1] + g[3] + g[4] + "\n")
@@ -194,7 +185,7 @@ def create_offline_version(args):
             else:
                 output.write(line)
     if not len(minifiedKey):
-        _delete_folder(outPath)
+        shutil.rmtree(outPath)
         print("Error while getting minified key in index.html")
         return
     _copy_save_url(homeURL, "js/App-minified." + minifiedKey + ".js", outPath,
@@ -211,7 +202,7 @@ def create_offline_version(args):
     try:
         all_studies = global_data['studies']
     except:
-        _delete_folder(outPath)
+        shutil.rmtree(outPath)
         print("Error while getting all studies from global json.")
         return
 
@@ -241,7 +232,7 @@ def create_offline_version(args):
                 if not f.startswith(".") and not f.startswith("__"): # mainly for macOSX hidden files
                     zipf.write(os.path.relpath(os.path.join(root, f), fp))
         zipf.close()
-        _delete_folder(outPath)
+        shutil.rmtree(outPath)
         print("done")
     except Exception as e:
         print("Something went wrong while creating the zip archive.")
