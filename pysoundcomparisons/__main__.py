@@ -112,20 +112,24 @@ def _copy_save_url(url, query, dest, file_path, api):
         output.write(response.read())
     return True
 
-def _fetch_save_scdata_json(url, dest, file_path, prefix, api):
+def _fetch_save_scdata_json(url, dest, file_path, prefix, api, with_online_soundpaths=False):
     """
     get a Sound-Comparisons data JSON object from url and save that object as valid JavaScript
     file at dest/file_path prefixed by prefix -- in addition replace cdstar sound file urls by
     local relativ paths (if desired)
     """
     data = requests.get(url).json()
-    # regex for replacing all soundPaths having http://cdstar.shh.mpg.de/bitstreams/{UID}/{soundPath}
-    # by relative URL sound/{languageFilePath}/{soundPath}
-    # {languageFilePath} is parsed via the fact that each {soundPath} begins with the
-    # {languageFilePath} and can be cut at the occurrance of a _ followed by at least three digits: _\d{3,}
-    r = re.compile(r"http://cdstar[^/]*?/[^/]*?/[^/]*?/((.*?)_\d{3,}.*?\.)")
-    with open(api.repos.joinpath(dest, "data", file_path + ".js"), "w") as output:
-        output.write(prefix + r.sub(r"sound/\g<2>/\g<1>", json.dumps(data, separators=(',', ':'))))
+    if with_online_soundpaths:
+        with open(api.repos.joinpath(dest, "data", file_path + ".js"), "w") as output:
+            output.write(prefix + json.dumps(data, separators=(',', ':')))
+    else:
+        # regex for replacing all soundPaths having http://cdstar.shh.mpg.de/bitstreams/{UID}/{soundPath}
+        # by relative URL sound/{languageFilePath}/{soundPath}
+        # {languageFilePath} is parsed via the fact that each {soundPath} begins with the
+        # {languageFilePath} and can be cut at the occurrance of a _ followed by at least three digits: _\d{3,}
+        r = re.compile(r"http://cdstar[^/]*?/[^/]*?/[^/]*?/((.*?)_\d{3,}.*?\.)")
+        with open(api.repos.joinpath(dest, "data", file_path + ".js"), "w") as output:
+            output.write(prefix + r.sub(r"sound/\g<2>/\g<1>", json.dumps(data, separators=(',', ':'))))
     return data
 
 
@@ -146,6 +150,9 @@ def create_offline_version(args):
 
     api = _api(args)
 
+    with_online_soundpaths = False
+    if "with_online_soundpaths" in args.args:
+        with_online_soundpaths = True
     outPath = "sndComp_offline"
     homeURL = args.sc_host
     baseURL = homeURL + "/query"
@@ -243,7 +250,7 @@ def create_offline_version(args):
         if(s != '--'): # skip delimiters
             print("  %s ..." % (s), flush=True)
             _fetch_save_scdata_json(baseURL + "/data?study=" + s, outPath,
-                "data_study_" + s, "var localDataStudy" + s + "=", api)
+                "data_study_" + s, "var localDataStudy" + s + "=", api, with_online_soundpaths)
 
     # create the zip archive
     print("creating ZIP archive ...", flush=True)
