@@ -12,17 +12,15 @@ legacy:
 import os
 import sys
 import pathlib
-from collections import OrderedDict
 import json
 import codecs
 import shutil
 import errno
 import requests
 import zipfile
-
 import re
 from pathlib import Path
-from clldutils import jsonlib
+from collections import OrderedDict
 
 try:
     # For Python 3.0 and later
@@ -31,6 +29,7 @@ except ImportError:
     # Fall back to Python 2's urllib2
     from urllib2 import urlopen
 
+from clldutils import jsonlib
 from clldutils.clilib import ArgumentParserWithLogging, command
 from clldutils.dsv import UnicodeWriter
 from cdstarcat import Catalog
@@ -93,9 +92,9 @@ def _copy_path(src, dest):
         else:
             print('Directory not copied. Error: %s' % e)
 
-def _copy_save_url(url, query, dest, file_path, api):
+def _copy_save_url(url, query, dest):
     """
-    download the content of the URL url + "/" + query and save that content to dest/file_path
+    download the content of the URL url + "/" + query and save that content to dest
     """
     response = None
     try:
@@ -108,19 +107,20 @@ def _copy_save_url(url, query, dest, file_path, api):
         shutil.rmtree(outPath)
         print("Please check --sc-host argument or connection for a valid URL %s" % (query))
         return False
-    with open(api.repos.joinpath(dest, file_path), "wb") as output:
+    with Path(dest).open(mode="wb") as output:
         output.write(response.read())
     return True
 
-def _fetch_save_scdata_json(url, dest, file_path, prefix, api, with_online_soundpaths=False):
+def _fetch_save_scdata_json(url, dest, file_path, prefix, with_online_soundpaths=False):
     """
     get a Sound-Comparisons data JSON object from url and save that object as valid JavaScript
     file at dest/file_path prefixed by prefix -- in addition replace cdstar sound file urls by
     local relativ paths (if desired)
     """
     data = requests.get(url).json()
+    pth = Path(os.path.join(dest, "data", file_path + ".js"))
     if with_online_soundpaths:
-        with open(api.repos.joinpath(dest, "data", file_path + ".js"), "w") as output:
+        with pth.open(mode="w", encoding="UTF-8") as output:
             output.write(prefix + json.dumps(data, separators=(',', ':')))
     else:
         # regex for replacing all soundPaths having http://cdstar.shh.mpg.de/bitstreams/{UID}/{soundPath}
@@ -128,7 +128,7 @@ def _fetch_save_scdata_json(url, dest, file_path, prefix, api, with_online_sound
         # {languageFilePath} is parsed via the fact that each {soundPath} begins with the
         # {languageFilePath} and can be cut at the occurrance of a _ followed by at least three digits: _\d{3,}
         r = re.compile(r"http://cdstar[^/]*?/[^/]*?/[^/]*?/((.*?)_\d{3,}.*?\.)")
-        with open(api.repos.joinpath(dest, "data", file_path + ".js"), "w") as output:
+        with pth.open(mode="w", encoding="UTF-8") as output:
             output.write(prefix + r.sub(r"sound/\g<2>/\g<1>", json.dumps(data, separators=(',', ':'))))
     return data
 
@@ -157,7 +157,7 @@ def create_offline_version(args):
     with_online_soundpaths = False
     if "with_online_soundpaths" in args.args:
         with_online_soundpaths = True
-    outPath = "sndComp_offline"
+    outPath = "/tmp/sndComp_offline"
     homeURL = args.sc_host
     baseURL = homeURL + "/query"
     sndCompRepoPath = args.sc_repo
@@ -171,19 +171,19 @@ def create_offline_version(args):
     if (os.path.exists(outPath)):
         shutil.rmtree(outPath)
     os.makedirs(outPath)
-    os.makedirs(api.repos.joinpath(outPath, "data"))
-    os.makedirs(api.repos.joinpath(outPath, "js"))
-    os.makedirs(api.repos.joinpath(outPath, "js", "extern"))
+    os.makedirs(os.path.join(outPath, "data"))
+    os.makedirs(os.path.join(outPath, "js"))
+    os.makedirs(os.path.join(outPath, "js", "extern"))
 
     # copy from repo all necessary static files
     print("copying static files ...", flush=True)
-    _copy_path(api.repos.joinpath(sndCompRepoPath, "site", "css"), api.repos.joinpath(outPath, "css"))
-    _copy_path(api.repos.joinpath(sndCompRepoPath, "site", "img"), api.repos.joinpath(outPath, "img"))
-    _copy_path(api.repos.joinpath(
+    _copy_path(os.path.join(sndCompRepoPath, "site", "css"), os.path.join(outPath, "css"))
+    _copy_path(os.path.join(sndCompRepoPath, "site", "img"), os.path.join(outPath, "img"))
+    _copy_path(os.path.join(
         sndCompRepoPath, "site", "js", "extern", "FileSaver.js"),
-        api.repos.joinpath(outPath, "js", "extern"))
-    _copy_path(api.repos.joinpath(sndCompRepoPath, "LICENSE"), outPath)
-    _copy_path(api.repos.joinpath(sndCompRepoPath, "README.md"), outPath)
+        os.path.join(outPath, "js", "extern"))
+    _copy_path(os.path.join(sndCompRepoPath, "LICENSE"), outPath)
+    _copy_path(os.path.join(sndCompRepoPath, "README.md"), outPath)
 
     # create index.html - handle and copy the main App.js file
     print("creating index.html ...", flush=True)
@@ -199,7 +199,7 @@ def create_offline_version(args):
         shutil.rmtree(outPath)
         print("Please check --sc-host argument or connection for a valid URL (index.html)")
         return
-    with open(api.repos.joinpath(outPath, "index.html"), "w") as output:
+    with open(os.path.join(outPath, "index.html"), "w") as output:
         data = response.read().decode("utf-8").splitlines(True)
         # try to find App-minified.KEY.js's key, if found delete it and store the key
         p = re.compile("(.*?)(App\\-minified)\\.(.*?)(\\.js)(.*)")
@@ -219,26 +219,26 @@ def create_offline_version(args):
         print("Error while getting minified key in index.html")
         return
     # copy App-minified.js without key
-    _copy_save_url(homeURL, "js/App-minified." + minifiedKey + ".js", outPath,
-        api.repos.joinpath("js", "App-minified.js"), api)
+    _copy_save_url(homeURL, "js/App-minified." + minifiedKey + ".js",
+        os.path.join(outPath, "js", "App-minified.js"))
 
     # get data global json
     print("getting global data from sc-host ...", flush=True)
-    _fetch_save_scdata_json(baseURL + "/data", outPath, "data", "var localData=", api)
+    _fetch_save_scdata_json(baseURL + "/data", outPath, "data", "var localData=")
     global_data = _fetch_save_scdata_json(
-        baseURL + "/data?global", outPath, "data_global", "var localDataGlobal=", api)
+        baseURL + "/data?global", outPath, "data_global", "var localDataGlobal=")
 
     # Providing translation files:
     tdata = _fetch_save_scdata_json(
         baseURL + "/translations?action=summary", outPath,
-        "translations_action_summary", "var localTranslationsActionSummary=", api);
+        "translations_action_summary", "var localTranslationsActionSummary=");
     # Combined translations map for all BrowserMatch:
     lnames = []
     for k in tdata.keys():
         lnames.append(tdata[k]['BrowserMatch'])
     _fetch_save_scdata_json(
             baseURL + "/translations?lng=" + "+".join(lnames) + "&ns=translation", outPath,
-            "translations_i18n", "var localTranslationsI18n=", api);
+            "translations_i18n", "var localTranslationsI18n=");
 
     # get all study names out of global_data and query all relevant json files
     # and save them as valid javascript files which can be loaded via <script>...</script>
@@ -255,7 +255,7 @@ def create_offline_version(args):
         if(s != '--'): # skip delimiters
             print("  %s ..." % (s), flush=True)
             d = _fetch_save_scdata_json(baseURL + "/data?study=" + s, outPath,
-                "data_study_" + s, "var localDataStudy" + s + "=", api, with_online_soundpaths)
+                "data_study_" + s, "var localDataStudy" + s + "=", with_online_soundpaths)
             # save all languages > FilePathPart for downloading sounds later on
             sound_file_folders[s] = []
             for lg in d['languages']:
@@ -276,25 +276,27 @@ def create_offline_version(args):
     # download all mp3 and ogg sound files for studies in desired_sounds list
     # and store them in /sound folder
     catalog_filepath = api.repos.joinpath(
-        '..', 'soundfiles', 'catalog.json')
+        'soundfiles', 'catalog.json')
     if catalog_filepath.exists():
         catalog_items = jsonlib.load(catalog_filepath)
     else:
         shutil.rmtree(outPath)
         print("File path {} does not exist.".format(catalog_filepath))
         return
+
+    if len(desired_sounds) > 0 and not os.path.exists(os.path.join(outPath, "sound")):
+        os.makedirs(os.path.join(outPath, "sound"))
+
     for study in desired_sounds:
         if study not in sound_file_folders.keys():
             print("No FilePathPart info found for study %s -- will be ignored" % (study))
             next
-        if not os.path.exists(api.repos.joinpath(outPath, "sound")):
-            os.makedirs(api.repos.joinpath(outPath, "sound"))
         # get all cdstar sound file paths and download them
         cdstar_paths = []
         for sffolder in sound_file_folders[study]:
-            print("download sound files for %s ..." % (sffolder), flush=True)
-            if not os.path.exists(api.repos.joinpath(outPath, "sound", sffolder)):
-                os.makedirs(api.repos.joinpath(outPath, "sound", sffolder))
+            print("downloading sound files for %s ..." % (sffolder), flush=True)
+            if not os.path.exists(os.path.join(outPath, "sound", sffolder)):
+                os.makedirs(os.path.join(outPath, "sound", sffolder))
             for k, v in catalog_items.items():
                 if k.startswith(sffolder + "_"):
                     for ext in v[1]:
@@ -302,21 +304,23 @@ def create_offline_version(args):
                             cdstar_paths.append("%s/%s.%s" % (v[0], k, ext))
                             _copy_save_url("http://cdstar.shh.mpg.de/bitstreams",
                                 "%s/%s.%s" % (v[0], k, ext),
-                                outPath,
-                                api.repos.joinpath("sound", sffolder, "%s.%s" % (k, ext)), api)
+                                os.path.join(outPath, "sound", sffolder, "%s.%s" % (k, ext)))
 
 
     # create the zip archive
     print("creating ZIP archive ...", flush=True)
     try:
         zipf = zipfile.ZipFile(outPath + ".zip", "w", zipfile.ZIP_DEFLATED)
-        fp = os.path.join(outPath, "..")
+        fp = Path(outPath).parent
         for root, dirs, files in os.walk(outPath):
             for f in files:
                 if not f.startswith(".") and not f.startswith("__"): # mainly for macOSX hidden files
-                    zipf.write(os.path.relpath(os.path.join(root, f), fp))
+                    zipf.write(os.path.join(root, f), os.path.relpath(os.path.join(root, f), fp))
         zipf.close()
         shutil.rmtree(outPath)
+        print("Copying archive to folder 'pysoundcomparisons' ...")
+        shutil.copy(outPath + ".zip", pathlib.Path(__file__).resolve().parent)
+        Path(outPath + ".zip").unlink()
         print("Done")
     except Exception as e:
         print("Something went wrong while creating the zip archive.")
@@ -361,24 +365,21 @@ def write_modified_soundfiles(args):
                     valid_soundfilepaths.append(lineArray[-1])
                 line = fp.readline().strip()
 
-    catalog_filepath = api.repos.joinpath(
-        '..', 'soundfiles', 'catalog.json')
+    catalog_filepath = api.repos.joinpath('soundfiles', 'catalog.json')
     if catalog_filepath.exists():
         catalog_items = jsonlib.load(catalog_filepath)
     else:
         print("File path {} does not exist.".format(catalog_filepath))
         return return_data
 
-    server_md5_filepath = api.repos.joinpath(
-        '..', 'soundfiles', 'ServerSndFilesChecksums.txt')
+    server_md5_filepath = api.repos.joinpath('soundfiles', 'ServerSndFilesChecksums.txt')
     if not os.path.isfile(server_md5_filepath):
         print("File path {} does not exist. Please generate it first.".format(server_md5_filepath))
         return return_data
 
     # Load cached metadata in order to minimize cdstar server lookups
     # If not desired simply delete or rename catalog_metatdata.json
-    cdstar_object_metadata_filepath = api.repos.joinpath(
-        '..', 'soundfiles', 'catalog_metatdata.json')
+    cdstar_object_metadata_filepath = api.repos.joinpath('soundfiles', 'catalog_metatdata.json')
     if cdstar_object_metadata_filepath.exists():
         cdstar_object_metadata = jsonlib.load(cdstar_object_metadata_filepath)
 
@@ -465,7 +466,7 @@ def write_modified_soundfiles(args):
         'check': return_check
     }
 
-    with open(api.repos.joinpath('..', 'soundfiles', 'modified.json'), 'w') as f:
+    with open(api.repos.joinpath('soundfiles', 'modified.json'), 'w') as f:
         json.dump(return_data, f, indent=4)
 
 @command()
@@ -677,7 +678,7 @@ def main():  # pragma: no cover
         '--repos',
         help="path to soundcomparisons-data repository",
         type=pathlib.Path,
-        default=pathlib.Path(__file__).parent.parent)
+        default=pathlib.Path(__file__).resolve().parent.parent)
     parser.add_argument('--db-host', default='localhost')
     parser.add_argument('--db-name', default='soundcomparisons')
     parser.add_argument('--db-user', default='soundcomparisons')
