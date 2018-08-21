@@ -685,9 +685,7 @@ def main():  # pragma: no cover
     parser.add_argument('--sc-host', default='http://www.soundcomparisons.com')
     parser.add_argument('--sc-repo',
         type=pathlib.Path,
-        default=os.path.join(
-            pathlib.Path(__file__).resolve().parent.parent.parent,
-            'Sound-Comparisons'))
+        default=pathlib.Path(__file__).resolve().parent.parent.parent / 'Sound-Comparisons')
     parser.add_argument('--only-for-study', default=None)
     sys.exit(parser.main())
 
