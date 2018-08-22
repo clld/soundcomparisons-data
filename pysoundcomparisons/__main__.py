@@ -136,7 +136,7 @@ def _fetch_save_scdata_json(url, dest, file_path, prefix, with_online_soundpaths
 @command()
 def create_offline_version(args):
     """
-    Creates sndComp_offline.zip without map tile files and (as default) without sound files.
+    Creates sndComp_offline.zip in {sc-repo}/site/offline without map tile files and (as default) without sound files.
     Usage:
       --sc-host --sc-repo createOfflineVersion
         sc-host: URL to soundcomparisons - default http://www.soundcomaprisons.com
@@ -318,8 +318,8 @@ def create_offline_version(args):
                     zipf.write(os.path.join(root, f), os.path.relpath(os.path.join(root, f), fp))
         zipf.close()
         shutil.rmtree(outPath)
-        print("Copying archive to folder 'pysoundcomparisons' ...")
-        shutil.copy(outPath + ".zip", pathlib.Path(__file__).resolve().parent)
+        print("Copying archive to '%s' ..." % os.path.join(sndCompRepoPath, "site", "offline"))
+        shutil.copy(outPath + ".zip", os.path.join(sndCompRepoPath, "site", "offline"))
         Path(outPath + ".zip").unlink()
         print("Done")
     except Exception as e:
