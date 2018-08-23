@@ -162,9 +162,12 @@ def create_offline_version(args):
     baseURL = homeURL + "/query"
     sndCompRepoPath = args.sc_repo
     if (not os.path.exists(sndCompRepoPath)):
-        print("Please check --sc-repo argument '%s' for a valid Sound-Comparisons repository path."
-            % (sndCompRepoPath))
-        return
+        # try to get path based on --repo
+        sndCompRepoPath = api.repos.resolve().parent.joinpath("Sound-Comparisons")
+        if (not os.path.exists(sndCompRepoPath)):
+            print("Please check --sc-repo argument '%s' for a valid Sound-Comparisons repository path."
+                % (sndCompRepoPath))
+            return
     sound_file_folders = {}
 
     # create folder structure
@@ -275,17 +278,17 @@ def create_offline_version(args):
                     print("argument '%s' is not a valid study name - will be ignored" % (arg))
     # download all mp3 and ogg sound files for studies in desired_sounds list
     # and store them in /sound folder
-    catalog_filepath = api.repos.joinpath(
-        'soundfiles', 'catalog.json')
-    if catalog_filepath.exists():
-        catalog_items = jsonlib.load(catalog_filepath)
-    else:
-        shutil.rmtree(outPath)
-        print("File path {} does not exist.".format(catalog_filepath))
-        return
-
-    if len(desired_sounds) > 0 and not os.path.exists(os.path.join(outPath, "sound")):
-        os.makedirs(os.path.join(outPath, "sound"))
+    if len(desired_sounds) > 0:
+        if not os.path.exists(os.path.join(outPath, "sound")):
+            os.makedirs(os.path.join(outPath, "sound"))
+        catalog_filepath = api.repos.joinpath(
+            'soundfiles', 'catalog.json')
+        if catalog_filepath.exists():
+            catalog_items = jsonlib.load(catalog_filepath)
+        else:
+            shutil.rmtree(outPath)
+            print("File path {} does not exist.".format(catalog_filepath))
+            return
 
     for study in desired_sounds:
         if study not in sound_file_folders.keys():
