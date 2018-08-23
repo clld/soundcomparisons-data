@@ -686,7 +686,7 @@ def main():  # pragma: no cover
     parser.add_argument('--db-name', default='soundcomparisons')
     parser.add_argument('--db-user', default='soundcomparisons')
     parser.add_argument('--db-password', default='pwd')
-    parser.add_argument('--sc-host', default='http://www.soundcomparisons.com')
+    parser.add_argument('--sc-host', default='localhost')
     parser.add_argument('--sc-repo',
         type=pathlib.Path,
         default=pathlib.Path(__file__).resolve().parent.parent.parent / 'Sound-Comparisons')
