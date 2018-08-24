@@ -3,7 +3,6 @@ need commands:
 - upload to cdstar
 - merge excel sheet
 - to_mysql
-- create offline version (per study)
 
 legacy:
 - to_cldf
@@ -100,12 +99,10 @@ def _copy_save_url(url, query, dest):
     try:
         response = urlopen(url + "/" + query)
     except:
-        shutil.rmtree(outPath)
-        print("Please check --sc-host argument or connection for a valid URL %s" % (query))
+        print("Please check %s/%s connection" % (url, query))
         return False
     if response is None:
-        shutil.rmtree(outPath)
-        print("Please check --sc-host argument or connection for a valid URL %s" % (query))
+        print("Please check %s/%s connection" % (url, query))
         return False
     with Path(dest).open(mode="wb") as output:
         output.write(response.read())
@@ -132,6 +129,161 @@ def _fetch_save_scdata_json(url, dest, file_path, prefix, with_online_soundpaths
             output.write(prefix + r.sub(r"sound/\g<2>/\g<1>", json.dumps(data, separators=(',', ':'))))
     return data
 
+
+@command()
+def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_needed=True):
+    """
+    Downloads desired sound files as {sound/}FilePathPart/FilePathPart_WordID.EXT from CDSTAR
+    to {current_folder}/sound or to out_path if passed.
+    As default it downoads all stored sound files, with the argument {EXT} you can pass desired
+    sound file extensions
+    Usage:
+    --sc-repo {--db-host --db-name --db-user --db-password} getSoundFilesFor ITEM {EXT}
+      Valid ITEMs:
+        UID(s): EAEA0-3A11-8354-556E-0 EAEA0-303B-3625-4014-0 ...
+        Study Name(s): Brazil Europe ...
+        FilePathPart(s): Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl ...
+        FilePathPart(s)+Word: Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_909_praised_maalato ...
+        Language_Index: 11121250509 11131000008 ...
+      Valid EXTs: mp3 ogg wav
+        (if an extension is not stored it falls back to the first ext mentioned in catalog,
+         otherwise no sound file)
+
+    db_needed = False if all items can be calculated as keys of catalog.json like FilePathPart {+ WordID}
+    """
+
+    api = _api(args)
+    if db_needed:
+        db = _db(args)
+
+    catalog_filepath = api.repos.joinpath(
+        'soundfiles', 'catalog.json')
+    if catalog_filepath.exists():
+        catalog_items = jsonlib.load(catalog_filepath)
+    else:
+        print("catalog.json at {} not found.".format(catalog_filepath))
+        return
+
+    # holds all desired FilePathParts+WordIDs
+    desired_keys = set()
+
+    # get desired extensions
+    valid_ext = ['mp3', 'ogg', 'wav']
+    desired_ext = list(set(args.args) & set(valid_ext))
+    if len(desired_ext) == 0:
+        desired_ext = list(valid_ext)
+    else:
+        # remove ext from args.args
+        args.args = list(set(args.args)-set(valid_ext))
+
+    all_catalog_keys = catalog_items.keys()
+    if db_needed:
+        # get desired keys via study names
+        try:
+            valid_studies = _get_all_study_names(db)
+            desired_studies = list(set(args.args) & set(valid_studies))
+            if len(desired_studies) > 0:
+                # remove study names from args.args
+                args.args = list(set(args.args)-set(desired_studies))
+                q = " UNION ".join([
+                    "SELECT DISTINCT FilePathPart AS f FROM Languages_%s" % (s) for s in desired_studies])
+                for x in list(db(q)):
+                    [desired_keys.add(k) for k in all_catalog_keys if k.startswith(x['f'] + "_")]
+        except Exception as e:
+            print("Check DB settings!", flush=True)
+            print(e)
+            return
+
+        # mapping LanguageIx -> FilePathPart
+        q = " UNION ".join([
+            """SELECT DISTINCT
+                FilePathPart AS f, LanguageIx AS i
+               FROM Languages_%s""" % (s) for s in valid_studies])
+        try:
+            idx_map = {str(x['i']): x['f'] for x in list(db(q))}
+        except Exception as e:
+            print("Check DB settings!", flush=True)
+            print(e)
+            return
+
+        # mapping UID -> FilePathPart
+        uid_map = {catalog_items[x][0]: x for x in all_catalog_keys}
+
+        # parse and validate left desired keys
+        for i in args.args:
+            if re.match(r"^\d{11,}$", i):
+                if i in idx_map.keys(): # LanguageIx ?
+                    [desired_keys.add(k) for k in all_catalog_keys if k.startswith(idx_map[i] + "_")]
+                else:
+                    print("%s unknown as LanguageIx in DB - will be ignored" % (i), flush=True)
+            elif re.match(r"^[\dA-F]{5}\-[\dA-F]{4}\-[\dA-F]{4}\-[\dA-F]{4}-[\dA-F]$", i):
+                if i in uid_map.keys(): # UID ?
+                    desired_keys.add(uid_map[i])
+                else:
+                    print("%s unknown as UID in catalog.json - will be ignored" % (i), flush=True)
+            else: # FilePathPart {+ WordID} ?
+                k = len(re.split(r"_\d{3,}_", i))
+                if k == 1: # FilePathPart only ?
+                    found = False
+                    i_ = i + "_"
+                    for s in all_catalog_keys:
+                        if s.startswith(i_):
+                            desired_keys.add(s)
+                            found = True
+                    if not found:
+                        print("%s unknown - will be ignored" % (i), flush=True)
+                elif k == 2: # FilePathPart + WordID
+                    if i in all_catalog_keys:
+                        desired_keys.add(i)
+                    else:
+                        print("%s unknown - will be ignored" % (i), flush=True)
+                else:
+                    print("%s unknown - will be ignored" % (i), flush=True)
+    else:
+        for i in args.args:
+            k = len(re.split(r"_\d{3,}_", i))
+            if k == 1: # FilePathPart only ?
+                found = False
+                i_ = i + "_"
+                for s in all_catalog_keys:
+                    if s.startswith(i_):
+                        desired_keys.add(s)
+                        found = True
+                if not found:
+                    print("%s unknown - will be ignored" % (i), flush=True)
+            elif k == 2: # FilePathPart + WordID
+                if i in all_catalog_keys:
+                    desired_keys.add(i)
+                else:
+                    print("%s unknown - will be ignored" % (i), flush=True)
+            else:
+                print("%s unknown - will be ignored" % (i), flush=True)
+
+    # download all desired sound files from CDSTAR
+    cur_sffolder = ""
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+    for pth in sorted(desired_keys):
+        # get folder name out of pth
+        p = re.split(r"_\d{3,}_", pth)
+        if len(p) != 2:
+            print("Invalid key %s - will be ignored" % (s))
+            next
+        sffolder = p[0]
+        if sffolder != cur_sffolder:
+            print("downloading sound files for %s ..." % (sffolder), flush=True)
+            cur_sffolder = sffolder
+            if not os.path.exists(os.path.join(out_path, sffolder)):
+                os.makedirs(os.path.join(out_path, sffolder))
+        # check for stored extensions
+        desired_ext_checked = list(set(catalog_items[pth][1]) & set(desired_ext))
+        if len(desired_ext_checked) == 0:
+            # fall back to first extension stored in catalog
+            desired_ext_checked.append(catalog_items[pth][1][0])
+        for ext in desired_ext_checked:
+            _copy_save_url("http://cdstar.shh.mpg.de/bitstreams",
+                "%s/%s.%s" % (catalog_items[pth][0], pth, ext),
+                os.path.join(out_path, sffolder, "%s.%s" % (pth, ext)))
 
 @command()
 def create_offline_version(args):
@@ -222,8 +374,10 @@ def create_offline_version(args):
         print("Error while getting minified key in index.html")
         return
     # copy App-minified.js without key
-    _copy_save_url(homeURL, "js/App-minified." + minifiedKey + ".js",
-        os.path.join(outPath, "js", "App-minified.js"))
+    if not _copy_save_url(homeURL, "js/App-minified." + minifiedKey + ".js",
+        os.path.join(outPath, "js", "App-minified.js")):
+        shutil.rmtree(outPath)
+        return
 
     # get data global json
     print("getting global data from sc-host ...", flush=True)
@@ -290,25 +444,15 @@ def create_offline_version(args):
             print("File path {} does not exist.".format(catalog_filepath))
             return
 
+    pth = os.path.join(outPath, "sound")
     for study in desired_sounds:
         if study not in sound_file_folders.keys():
             print("No FilePathPart info found for study %s -- will be ignored" % (study))
             next
         # get all cdstar sound file paths and download them
-        cdstar_paths = []
-        for sffolder in sound_file_folders[study]:
-            print("downloading sound files for %s ..." % (sffolder), flush=True)
-            if not os.path.exists(os.path.join(outPath, "sound", sffolder)):
-                os.makedirs(os.path.join(outPath, "sound", sffolder))
-            for k, v in catalog_items.items():
-                if k.startswith(sffolder + "_"):
-                    for ext in v[1]:
-                        if ext != "wav":
-                            cdstar_paths.append("%s/%s.%s" % (v[0], k, ext))
-                            _copy_save_url("http://cdstar.shh.mpg.de/bitstreams",
-                                "%s/%s.%s" % (v[0], k, ext),
-                                os.path.join(outPath, "sound", sffolder, "%s.%s" % (k, ext)))
-
+        args.args = ['mp3', 'ogg']
+        args.args.extend(sound_file_folders[study])
+        downloadSoundFiles(args, pth, False) # db_needed=False since we have only FilePathParts
 
     # create the zip archive
     print("creating ZIP archive ...", flush=True)
