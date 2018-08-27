@@ -23,7 +23,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'clldutils',
-        'cdstarcat',
+        'cdstarcat>=0.6',
         'attrs',
         'pycldf>=1.0.6',
         'sqlalchemy',
