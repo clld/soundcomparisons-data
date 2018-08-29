@@ -31,10 +31,10 @@ except ImportError:
 from clldutils import jsonlib
 from clldutils.clilib import ArgumentParserWithLogging, command
 from clldutils.dsv import UnicodeWriter
-from cdstarcat import Catalog
 
 from pysoundcomparisons.api import SoundComparisons
 from pysoundcomparisons.db import DB
+from pysoundcomparisons.mediacatalog import MediaCatalog
 
 def _db(args):
     return DB(host=args.db_host, db=args.db_name, user=args.db_user, password=args.db_password)
@@ -152,23 +152,26 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
     db_needed = False if all items can be calculated as keys of catalog.json like FilePathPart {+ WordID}
     """
 
+    from cdstarcat import OBJID_PATTERN
+
     api = _api(args)
     if db_needed:
         db = _db(args)
 
-    catalog_filepath = api.repos.joinpath(
-        'soundfiles', 'catalog.json')
-    if catalog_filepath.exists():
-        catalog_items = jsonlib.load(catalog_filepath)
-    else:
-        print("catalog.json at {} not found.".format(catalog_filepath))
+    catalog = MediaCatalog(api.repos.joinpath('soundfiles', 'catalog.json'))
+    try:
+        catalog[0]
+    except:
+        print("catalog.json at {} is empty.".format(
+            api.repos.joinpath('soundfiles', 'catalog.json')
+        ))
         return
 
     # holds all desired FilePathParts+WordIDs
     desired_keys = set()
 
     # get desired extensions
-    valid_ext = ['mp3', 'ogg', 'wav']
+    valid_ext = catalog.sound_extensions()
     desired_ext = list(set(args.args) & set(valid_ext))
     if len(desired_ext) == 0:
         desired_ext = list(valid_ext)
@@ -176,7 +179,8 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
         # remove ext from args.args
         args.args = list(set(args.args)-set(valid_ext))
 
-    all_catalog_keys = catalog_items.keys()
+    file_path_uid_map = catalog.file_path_uid_map()
+
     if db_needed:
         # get desired keys via study names
         try:
@@ -188,7 +192,7 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
                 q = " UNION ".join([
                     "SELECT DISTINCT FilePathPart AS f FROM Languages_%s" % (s) for s in desired_studies])
                 for x in list(db(q)):
-                    [desired_keys.add(k) for k in all_catalog_keys if k.startswith(x['f'] + "_")]
+                    desired_keys.update(catalog.file_path_keys_with_prefix(x['f']))
         except Exception as e:
             print("Check DB settings!", flush=True)
             print(e)
@@ -206,34 +210,28 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
             print(e)
             return
 
-        # mapping UID -> FilePathPart
-        uid_map = {catalog_items[x][0]: x for x in all_catalog_keys}
-
         # parse and validate left desired keys
         for i in args.args:
             if re.match(r"^\d{11,}$", i):
                 if i in idx_map.keys(): # LanguageIx ?
-                    [desired_keys.add(k) for k in all_catalog_keys if k.startswith(idx_map[i] + "_")]
+                    desired_keys.update(catalog.file_path_keys_with_prefix(idx_map[i]))
                 else:
                     print("%s unknown as LanguageIx in DB - will be ignored" % (i), flush=True)
-            elif re.match(r"^[\dA-F]{5}\-[\dA-F]{4}\-[\dA-F]{4}\-[\dA-F]{4}-[\dA-F]$", i):
-                if i in uid_map.keys(): # UID ?
-                    desired_keys.add(uid_map[i])
+            elif OBJID_PATTERN.match(i):
+                if i in catalog.objects.keys(): # UID ?
+                    desired_keys.add(catalog.objects[i].metadata['name'])
                 else:
                     print("%s unknown as UID in catalog.json - will be ignored" % (i), flush=True)
             else: # FilePathPart {+ WordID} ?
                 k = len(re.split(r"_\d{3,}_", i))
                 if k == 1: # FilePathPart only ?
-                    found = False
-                    i_ = i + "_"
-                    for s in all_catalog_keys:
-                        if s.startswith(i_):
-                            desired_keys.add(s)
-                            found = True
-                    if not found:
+                    new_keys = catalog.file_path_keys_with_prefix(i)
+                    if len(new_keys) > 0:
+                        desired_keys.update(new_keys)
+                    else:
                         print("%s unknown - will be ignored" % (i), flush=True)
                 elif k == 2: # FilePathPart + WordID
-                    if i in all_catalog_keys:
+                    if i in file_path_uid_map:
                         desired_keys.add(i)
                     else:
                         print("%s unknown - will be ignored" % (i), flush=True)
@@ -243,16 +241,13 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
         for i in args.args:
             k = len(re.split(r"_\d{3,}_", i))
             if k == 1: # FilePathPart only ?
-                found = False
-                i_ = i + "_"
-                for s in all_catalog_keys:
-                    if s.startswith(i_):
-                        desired_keys.add(s)
-                        found = True
-                if not found:
+                new_keys = catalog.file_path_keys_with_prefix(i)
+                if len(new_keys) > 0:
+                    desired_keys.update(new_keys)
+                else:
                     print("%s unknown - will be ignored" % (i), flush=True)
             elif k == 2: # FilePathPart + WordID
-                if i in all_catalog_keys:
+                if i in file_path_uid_map:
                     desired_keys.add(i)
                 else:
                     print("%s unknown - will be ignored" % (i), flush=True)
@@ -264,25 +259,31 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
     if not os.path.exists(out_path):
         os.makedirs(out_path)
     for pth in sorted(desired_keys):
+        # check for stored extensions
+        available_ext = catalog.extensions_for_file_path_key(pth)
+        desired_ext_checked = list(set(available_ext) & set(desired_ext))
+        if len(desired_ext_checked) == 0:
+            if len(available_ext) > 0:
+                # fall back to first extension stored in catalog
+                desired_ext_checked.append(available_ext[0])
+            else:
+                print("ERROR - no sound file for key %s" % (pth), flush=True)
+                continue
         # get folder name out of pth
         p = re.split(r"_\d{3,}_", pth)
         if len(p) != 2:
             print("Invalid key %s - will be ignored" % (s))
-            next
+            continue
         sffolder = p[0]
         if sffolder != cur_sffolder:
             print("downloading sound files for %s ..." % (sffolder), flush=True)
             cur_sffolder = sffolder
             if not os.path.exists(os.path.join(out_path, sffolder)):
                 os.makedirs(os.path.join(out_path, sffolder))
-        # check for stored extensions
-        desired_ext_checked = list(set(catalog_items[pth][1]) & set(desired_ext))
-        if len(desired_ext_checked) == 0:
-            # fall back to first extension stored in catalog
-            desired_ext_checked.append(catalog_items[pth][1][0])
         for ext in desired_ext_checked:
+            # print("%s/%s.%s" % (file_path_uid_map[pth], pth, ext))
             _copy_save_url("http://cdstar.shh.mpg.de/bitstreams",
-                "%s/%s.%s" % (catalog_items[pth][0], pth, ext),
+                "%s/%s.%s" % (file_path_uid_map[pth], pth, ext),
                 os.path.join(out_path, sffolder, "%s.%s" % (pth, ext)))
 
 @command()
@@ -435,14 +436,6 @@ def create_offline_version(args):
     if len(desired_sounds) > 0:
         if not os.path.exists(os.path.join(outPath, "sound")):
             os.makedirs(os.path.join(outPath, "sound"))
-        catalog_filepath = api.repos.joinpath(
-            'soundfiles', 'catalog.json')
-        if catalog_filepath.exists():
-            catalog_items = jsonlib.load(catalog_filepath)
-        else:
-            shutil.rmtree(outPath)
-            print("File path {} does not exist.".format(catalog_filepath))
-            return
 
     pth = os.path.join(outPath, "sound")
     for study in desired_sounds:
@@ -491,17 +484,15 @@ def write_modified_soundfiles(args):
 
     api = _api(args)
 
-    catalog_items = {}
     return_data = {}
     return_new = set()
     return_modified = {}
     return_obsolete = {}
     return_check = {}
-    cdstar_object_metadata = {}
     valid_soundfilepaths = []
     server_md5_items = set()
 
-    valid_soundfilepaths_filepath = api.repos.joinpath(
+    valid_soundfilepaths_filepath = api.repos.joinpath('pysoundcomparisons',
         'valid_soundfilepaths.txt')
     if valid_soundfilepaths_filepath.exists():
         with open(valid_soundfilepaths_filepath) as fp:
@@ -511,106 +502,79 @@ def write_modified_soundfiles(args):
                 if len(lineArray) > 0:
                     valid_soundfilepaths.append(lineArray[-1])
                 line = fp.readline().strip()
-
-    catalog_filepath = api.repos.joinpath('soundfiles', 'catalog.json')
-    if catalog_filepath.exists():
-        catalog_items = jsonlib.load(catalog_filepath)
     else:
-        print("File path {} does not exist.".format(catalog_filepath))
-        return return_data
+        print("'valid_soundfilepaths.txt' can not be found at %s" % (
+            valid_soundfilepaths_filepath))
+        return
+
+    catalog = MediaCatalog(api.repos.joinpath('soundfiles', 'catalog.json'))
+    try:
+        catalog[0]
+    except:
+        print("catalog.json at {} is empty.".format(
+            api.repos.joinpath('soundfiles', 'catalog.json')))
+        return
+
+    file_path_uid_map = catalog.file_path_uid_map()
 
     server_md5_filepath = api.repos.joinpath('soundfiles', 'ServerSndFilesChecksums.txt')
     if not os.path.isfile(server_md5_filepath):
-        print("File path {} does not exist. Please generate it first.".format(server_md5_filepath))
+        print("File path {} does not exist. Please generate it first.".format(
+            server_md5_filepath))
         return return_data
 
-    # Load cached metadata in order to minimize cdstar server lookups
-    # If not desired simply delete or rename catalog_metatdata.json
-    cdstar_object_metadata_filepath = api.repos.joinpath('soundfiles', 'catalog_metatdata.json')
-    if cdstar_object_metadata_filepath.exists():
-        cdstar_object_metadata = jsonlib.load(cdstar_object_metadata_filepath)
-
-    cnt = 1
     with open(server_md5_filepath) as fp:
         line = fp.readline().strip()
         while line:
             (md5, sffolder, sfpath, ext) = re.match(
                 r"^(.*?)  .*/([^/]+?)/([^/]+?)\.(.*)", line).groups()
             server_md5_items.add(sfpath)
-            # if sfpath.startswith("Oce_"):
-            if sfpath in catalog_items:
-                meta_obj = None
-                if sfpath in cdstar_object_metadata:
-                    meta_obj = cdstar_object_metadata[sfpath]
-                else:
-                    meta_obj = _get_jsonparsed_data(
-                        "http://cdstar.shh.mpg.de/objects/%s" % (catalog_items[sfpath][0])
-                    )['bitstream']
-                    if meta_obj is None:
-                        with open(cdstar_object_metadata_filepath, 'w') as f:
-                            json.dump(cdstar_object_metadata, f, indent=4)
-                        print("HTTP Error - wait a sec and rerun the command")
-                        sys.exit()
-                    else:
-                        cdstar_object_metadata[sfpath] = meta_obj
-                if meta_obj is not None:
-                    check_sf = "%s.%s" % (sfpath, ext)
-                    found = False
-                    for sf in meta_obj:
-                        if sf['bitstreamid'] == check_sf:
-                            found = True
-                            if sf['checksum'] == md5:
-                                pass
-                            else:
-                                if catalog_items[sfpath][0] not in return_modified:
-                                    return_modified[catalog_items[sfpath][0]] = []
-                                return_modified[catalog_items[sfpath][0]].append(
-                                    "%s/%s" % (sffolder, check_sf)
-                                    )
-                            break
-                    if not found and sfpath in valid_soundfilepaths:
-                        return_new.add("%s/%s" % (sffolder, check_sf))
-                else:
-                    print("Error while processing %s for %s" % (
-                        sfpath, catalog_items[sfpath][0]), flush=True)
+            if sfpath in file_path_uid_map:
+                uid = file_path_uid_map[sfpath]
+                bs_obj = catalog.objects[uid].bitstreams
+                check_sf = "%s.%s" % (sfpath, ext)
+                found = False
+                for bs in bs_obj:
+                    if bs.id == check_sf:
+                        found = True
+                        if bs.md5 != md5:
+                            if uid not in return_modified:
+                                return_modified[uid] = []
+                            return_modified[uid].append(
+                                "%s/%s" % (sffolder, check_sf)
+                                )
+                        break
+                if not found and sfpath in valid_soundfilepaths:
+                    return_new.add("%s/%s" % (sffolder, check_sf))
             else:
                 if sfpath in valid_soundfilepaths:
                     return_new.add("%s/%s" % (sffolder, sfpath))
 
-            cnt += 1
-            if not cnt % 10000:
-                # Save metadata cache in case cdstar request fails
-                # to avoid querying again
-                with open(cdstar_object_metadata_filepath, 'w') as f:
-                    json.dump(cdstar_object_metadata, f, indent=4)
-
             line = fp.readline().strip()
-
-    # Save metadata cache
-    with open(cdstar_object_metadata_filepath, 'w') as f:
-        json.dump(cdstar_object_metadata, f, indent=4)
 
     # Check if there are items in catalog.json
     # which are not listed in ServerSndFilesChecksums.txt 
-    # and distinguish between valid paths.
+    # and distinguish between valid paths and not valid ones.
     # 'obsolete' objects could be deleted, 'check' data are valid on cdstar 
     #   but not on soundcomparisons.com !
-    for k in catalog_items.keys():
-        if k not in server_md5_items:
-            if k in valid_soundfilepaths:
-                if catalog_items[k][0] not in return_check:
-                    return_check[catalog_items[k][0]] = []
-                return_check[catalog_items[k][0]].append(k)
+    for obj in catalog:
+        uid = obj.id
+        sfpath = obj.metadata['name']
+        if sfpath not in server_md5_items:
+            if sfpath in valid_soundfilepaths:
+                if uid not in return_check:
+                    return_check[uid] = []
+                return_check[uid].append(sfpath)
             else:
-                if catalog_items[k][0] not in return_obsolete:
-                    return_obsolete[catalog_items[k][0]] = []
-                return_obsolete[catalog_items[k][0]].append(k)
+                if uid not in return_obsolete:
+                    return_obsolete[uid] = []
+                return_obsolete[uid].append(sfpath)
 
     return_data = {
         'new': sorted(return_new),
-        'modified': return_modified,
-        'obsolete': return_obsolete,
-        'check': return_check
+        'modified': {k:return_modified[k] for k in sorted(return_modified)},
+        'obsolete': {k:return_obsolete[k] for k in sorted(return_obsolete)},
+        'check': {k:return_check[k] for k in sorted(return_check)}
     }
 
     with open(api.repos.joinpath('soundfiles', 'modified.json'), 'w') as f:
