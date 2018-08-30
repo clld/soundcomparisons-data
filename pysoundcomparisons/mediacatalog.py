@@ -1,31 +1,26 @@
 from cdstarcat import Catalog
+from clldutils.misc import lazyproperty
 
 class MediaCatalog(Catalog):
-    __mimetypes = {
+
+    valid_mimetypes = {
         'mp3': 'audio/mpeg',
         'ogg': 'audio/ogg',
         'wav': 'audio/wav',
     }
 
-    __file_path_uid_map = None
-
+    @lazyproperty
     def file_path_uid_map(self):
-        if self.__file_path_uid_map is None:
-            self.__file_path_uid_map = { 
-                self.objects[i].metadata['name'] : i for i in self.objects}
-        return self.__file_path_uid_map
+        return {obj.metadata['name'] : obj.id for obj in self}
 
     def file_path_keys_with_prefix(self, prefix="", trailing_delimiter="_"):
         return [
-            k for k in self.file_path_uid_map() if k.startswith(prefix + trailing_delimiter)]
-
-    def sound_extensions(self):
-        return sorted(self.__mimetypes.keys())
+            k for k in self.file_path_uid_map if k.startswith(prefix + trailing_delimiter)]
 
     def extensions_for_file_path_key(self, fpath):
         ret = []
-        for bs in self.objects[self.file_path_uid_map()[fpath]].bitstreams:
-            for (ext, mime) in self.__mimetypes.items():
+        for bs in self.objects[self.file_path_uid_map[fpath]].bitstreams:
+            for (ext, mime) in self.valid_mimetypes.items():
                 if bs.mimetype == mime:
                     ret.append(ext)
         return ret

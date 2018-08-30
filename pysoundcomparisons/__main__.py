@@ -89,7 +89,7 @@ def _copy_path(src, dest):
         if e.errno == errno.ENOTDIR:
             shutil.copy(src, dest)
         else:
-            print('Directory not copied. Error: %s' % e)
+            args.log.error('Directory not copied. Error: %s' % e)
 
 def _copy_save_url(url, query, dest):
     """
@@ -99,10 +99,10 @@ def _copy_save_url(url, query, dest):
     try:
         response = urlopen(url + "/" + query)
     except:
-        print("Please check %s/%s connection" % (url, query))
+        args.log.error("Please check %s/%s connection" % (url, query))
         return False
     if response is None:
-        print("Please check %s/%s connection" % (url, query))
+        args.log.error("Please check %s/%s connection" % (url, query))
         return False
     with Path(dest).open(mode="wb") as output:
         output.write(response.read())
@@ -135,10 +135,10 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
     """
     Downloads desired sound files as {sound/}FilePathPart/FilePathPart_WordID.EXT from CDSTAR
     to {current_folder}/sound or to out_path if passed.
-    As default it downoads all stored sound files, with the argument {EXT} you can pass desired
+    As default it downloads all stored sound files, with the argument {EXT} you can pass desired
     sound file extensions
     Usage:
-    --sc-repo {--db-host --db-name --db-user --db-password} getSoundFilesFor ITEM {EXT}
+    --sc-repo {--db-host --db-name --db-user --db-password} downloadSoundFiles ITEM {EXT}
       Valid ITEMs:
         UID(s): EAEA0-3A11-8354-556E-0 EAEA0-303B-3625-4014-0 ...
         Study Name(s): Brazil Europe ...
@@ -162,7 +162,7 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
     try:
         catalog[0]
     except:
-        print("catalog.json at {} is empty.".format(
+        args.log.error("catalog.json at {} is empty.".format(
             api.repos.joinpath('soundfiles', 'catalog.json')
         ))
         return
@@ -171,15 +171,13 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
     desired_keys = set()
 
     # get desired extensions
-    valid_ext = catalog.sound_extensions()
+    valid_ext = catalog.valid_mimetypes.keys()
     desired_ext = list(set(args.args) & set(valid_ext))
     if len(desired_ext) == 0:
         desired_ext = list(valid_ext)
     else:
         # remove ext from args.args
         args.args = list(set(args.args)-set(valid_ext))
-
-    file_path_uid_map = catalog.file_path_uid_map()
 
     if db_needed:
         # get desired keys via study names
@@ -194,8 +192,8 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
                 for x in list(db(q)):
                     desired_keys.update(catalog.file_path_keys_with_prefix(x['f']))
         except Exception as e:
-            print("Check DB settings!", flush=True)
-            print(e)
+            args.log.error("Check DB settings!")
+            args.log.error(e)
             return
 
         # mapping LanguageIx -> FilePathPart
@@ -206,8 +204,8 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
         try:
             idx_map = {str(x['i']): x['f'] for x in list(db(q))}
         except Exception as e:
-            print("Check DB settings!", flush=True)
-            print(e)
+            args.log.error("Check DB settings!")
+            args.log.error(e)
             return
 
         # parse and validate left desired keys
@@ -216,12 +214,12 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
                 if i in idx_map.keys(): # LanguageIx ?
                     desired_keys.update(catalog.file_path_keys_with_prefix(idx_map[i]))
                 else:
-                    print("%s unknown as LanguageIx in DB - will be ignored" % (i), flush=True)
+                    args.log.warning("%s unknown as LanguageIx in DB - will be ignored" % (i))
             elif OBJID_PATTERN.match(i):
                 if i in catalog.objects.keys(): # UID ?
                     desired_keys.add(catalog.objects[i].metadata['name'])
                 else:
-                    print("%s unknown as UID in catalog.json - will be ignored" % (i), flush=True)
+                    args.log.warning("%s unknown as UID in catalog.json - will be ignored" % (i))
             else: # FilePathPart {+ WordID} ?
                 k = len(re.split(r"_\d{3,}_", i))
                 if k == 1: # FilePathPart only ?
@@ -229,14 +227,14 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
                     if len(new_keys) > 0:
                         desired_keys.update(new_keys)
                     else:
-                        print("%s unknown - will be ignored" % (i), flush=True)
+                        args.log.warning("%s unknown - will be ignored" % (i))
                 elif k == 2: # FilePathPart + WordID
-                    if i in file_path_uid_map:
+                    if i in catalog.file_path_uid_map:
                         desired_keys.add(i)
                     else:
-                        print("%s unknown - will be ignored" % (i), flush=True)
+                        args.log.warning("%s unknown - will be ignored" % (i))
                 else:
-                    print("%s unknown - will be ignored" % (i), flush=True)
+                    args.log.warning("%s unknown - will be ignored" % (i))
     else:
         for i in args.args:
             k = len(re.split(r"_\d{3,}_", i))
@@ -245,14 +243,14 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
                 if len(new_keys) > 0:
                     desired_keys.update(new_keys)
                 else:
-                    print("%s unknown - will be ignored" % (i), flush=True)
+                    args.log.warning("%s unknown - will be ignored" % (i))
             elif k == 2: # FilePathPart + WordID
-                if i in file_path_uid_map:
+                if i in catalog.file_path_uid_map:
                     desired_keys.add(i)
                 else:
-                    print("%s unknown - will be ignored" % (i), flush=True)
+                    args.log.warning("%s unknown - will be ignored" % (i))
             else:
-                print("%s unknown - will be ignored" % (i), flush=True)
+                args.log.warning("%s unknown - will be ignored" % (i))
 
     # download all desired sound files from CDSTAR
     cur_sffolder = ""
@@ -267,23 +265,23 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
                 # fall back to first extension stored in catalog
                 desired_ext_checked.append(available_ext[0])
             else:
-                print("ERROR - no sound file for key %s" % (pth), flush=True)
+                args.log.warning("No sound file for %s found" % (pth))
                 continue
         # get folder name out of pth
         p = re.split(r"_\d{3,}_", pth)
         if len(p) != 2:
-            print("Invalid key %s - will be ignored" % (s))
+            args.log.warning("Invalid key %s - will be ignored" % (s))
             continue
         sffolder = p[0]
         if sffolder != cur_sffolder:
-            print("downloading sound files for %s ..." % (sffolder), flush=True)
+            args.log.info("downloading sound files for %s ..." % (sffolder))
             cur_sffolder = sffolder
             if not os.path.exists(os.path.join(out_path, sffolder)):
                 os.makedirs(os.path.join(out_path, sffolder))
         for ext in desired_ext_checked:
-            # print("%s/%s.%s" % (file_path_uid_map[pth], pth, ext))
+            args.log.debug("Dowloading %s/%s.%s" % (catalog.file_path_uid_map[pth], pth, ext))
             _copy_save_url("http://cdstar.shh.mpg.de/bitstreams",
-                "%s/%s.%s" % (file_path_uid_map[pth], pth, ext),
+                "%s/%s.%s" % (catalog.file_path_uid_map[pth], pth, ext),
                 os.path.join(out_path, sffolder, "%s.%s" % (pth, ext)))
 
 @command()
@@ -318,7 +316,7 @@ def create_offline_version(args):
         # try to get path based on --repo
         sndCompRepoPath = api.repos.resolve().parent.joinpath("Sound-Comparisons")
         if (not os.path.exists(sndCompRepoPath)):
-            print("Please check --sc-repo argument '%s' for a valid Sound-Comparisons repository path."
+            args.log.error("Please check --sc-repo argument '%s' for a valid Sound-Comparisons repository path."
                 % (sndCompRepoPath))
             return
     sound_file_folders = {}
@@ -332,7 +330,7 @@ def create_offline_version(args):
     os.makedirs(os.path.join(outPath, "js", "extern"))
 
     # copy from repo all necessary static files
-    print("copying static files ...", flush=True)
+    args.log.info("copying static files ...")
     _copy_path(os.path.join(sndCompRepoPath, "site", "css"), os.path.join(outPath, "css"))
     _copy_path(os.path.join(sndCompRepoPath, "site", "img"), os.path.join(outPath, "img"))
     _copy_path(os.path.join(
@@ -342,18 +340,18 @@ def create_offline_version(args):
     _copy_path(os.path.join(sndCompRepoPath, "README.md"), outPath)
 
     # create index.html - handle and copy the main App.js file
-    print("creating index.html ...", flush=True)
+    args.log.info("creating index.html ...")
     response = None
     minifiedKey = ""
     try:
         response = urlopen(homeURL + "/index.html")
     except:
         shutil.rmtree(outPath)
-        print("Please check --sc-host argument or connection for a valid URL (index.html)")
+        args.log.error("Please check --sc-host argument or connection for a valid URL (index.html)")
         return
     if response is None:
         shutil.rmtree(outPath)
-        print("Please check --sc-host argument or connection for a valid URL (index.html)")
+        args.log.error("Please check --sc-host argument or connection for a valid URL (index.html)")
         return
     with open(os.path.join(outPath, "index.html"), "w") as output:
         data = response.read().decode("utf-8").splitlines(True)
@@ -364,7 +362,7 @@ def create_offline_version(args):
                 g = p.match(line).groups()
                 if not len(g) == 5:
                     shutil.rmtree(outPath)
-                    print("Error while parsing index.html")
+                    args.log.error("Error while parsing index.html")
                     return
                 output.write(g[0] + g[1] + g[3] + g[4] + "\n")
                 minifiedKey = g[2]
@@ -372,7 +370,7 @@ def create_offline_version(args):
                 output.write(line)
     if not len(minifiedKey):
         shutil.rmtree(outPath)
-        print("Error while getting minified key in index.html")
+        args.log.error("Error while getting minified key in index.html")
         return
     # copy App-minified.js without key
     if not _copy_save_url(homeURL, "js/App-minified." + minifiedKey + ".js",
@@ -381,7 +379,7 @@ def create_offline_version(args):
         return
 
     # get data global json
-    print("getting global data from sc-host ...", flush=True)
+    args.log.info("getting global data from sc-host ...")
     _fetch_save_scdata_json(baseURL + "/data", outPath, "data", "var localData=")
     global_data = _fetch_save_scdata_json(
         baseURL + "/data?global", outPath, "data_global", "var localDataGlobal=")
@@ -400,18 +398,18 @@ def create_offline_version(args):
 
     # get all study names out of global_data and query all relevant json files
     # and save them as valid javascript files which can be loaded via <script>...</script>
-    print("getting study data from sc-host ...", flush=True)
+    args.log.info("getting study data from sc-host ...")
     all_studies = []
     try:
         all_studies = global_data['studies']
     except:
         shutil.rmtree(outPath)
-        print("Error while getting all studies from global json.")
+        args.log.error("Error while getting all studies from global json.")
         return
 
     for s in all_studies:
         if(s != '--'): # skip delimiters
-            print("  %s ..." % (s), flush=True)
+            args.log.info("  %s ..." % (s))
             d = _fetch_save_scdata_json(baseURL + "/data?study=" + s, outPath,
                 "data_study_" + s, "var localDataStudy" + s + "=", with_online_soundpaths)
             # save all languages > FilePathPart for downloading sounds later on
@@ -430,7 +428,7 @@ def create_offline_version(args):
             if arg in all_studies:
                 desired_sounds.append(arg)
             elif arg not in ["all_sounds"]:
-                    print("argument '%s' is not a valid study name - will be ignored" % (arg))
+                    args.log.warning("argument '%s' is not a valid study name - will be ignored" % (arg))
     # download all mp3 and ogg sound files for studies in desired_sounds list
     # and store them in /sound folder
     if len(desired_sounds) > 0:
@@ -440,15 +438,15 @@ def create_offline_version(args):
     pth = os.path.join(outPath, "sound")
     for study in desired_sounds:
         if study not in sound_file_folders.keys():
-            print("No FilePathPart info found for study %s -- will be ignored" % (study))
-            next
+            args.log.warning("No FilePathPart info found for study %s -- will be ignored" % (study))
+            continue
         # get all cdstar sound file paths and download them
         args.args = ['mp3', 'ogg']
         args.args.extend(sound_file_folders[study])
         downloadSoundFiles(args, pth, False) # db_needed=False since we have only FilePathParts
 
     # create the zip archive
-    print("creating ZIP archive ...", flush=True)
+    args.log.info("creating ZIP archive ...")
     try:
         zipf = zipfile.ZipFile(outPath + ".zip", "w", zipfile.ZIP_DEFLATED)
         fp = Path(outPath).parent
@@ -458,12 +456,13 @@ def create_offline_version(args):
                     zipf.write(os.path.join(root, f), os.path.relpath(os.path.join(root, f), fp))
         zipf.close()
         shutil.rmtree(outPath)
-        print("Copying archive to '%s' ..." % os.path.join(sndCompRepoPath, "site", "offline"))
+        args.log.info("Copying archive to '%s' ..." % os.path.join(sndCompRepoPath, "site", "offline"))
         shutil.copy(outPath + ".zip", os.path.join(sndCompRepoPath, "site", "offline"))
         Path(outPath + ".zip").unlink()
-        print("Done")
+        args.log.info("Done")
     except Exception as e:
-        print("Something went wrong while creating the zip archive.")
+        args.log.error("Something went wrong while creating the zip archive.")
+        args.log.error(e)
         raise
 
 @command()
@@ -492,7 +491,7 @@ def write_modified_soundfiles(args):
     valid_soundfilepaths = []
     server_md5_items = set()
 
-    valid_soundfilepaths_filepath = api.repos.joinpath('pysoundcomparisons',
+    valid_soundfilepaths_filepath = api.repos.joinpath('soundfiles',
         'valid_soundfilepaths.txt')
     if valid_soundfilepaths_filepath.exists():
         with open(valid_soundfilepaths_filepath) as fp:
@@ -503,7 +502,7 @@ def write_modified_soundfiles(args):
                     valid_soundfilepaths.append(lineArray[-1])
                 line = fp.readline().strip()
     else:
-        print("'valid_soundfilepaths.txt' can not be found at %s" % (
+        args.log.error("'valid_soundfilepaths.txt' can not be found at %s" % (
             valid_soundfilepaths_filepath))
         return
 
@@ -511,15 +510,13 @@ def write_modified_soundfiles(args):
     try:
         catalog[0]
     except:
-        print("catalog.json at {} is empty.".format(
+        args.log.error("catalog.json at {} is empty.".format(
             api.repos.joinpath('soundfiles', 'catalog.json')))
         return
 
-    file_path_uid_map = catalog.file_path_uid_map()
-
     server_md5_filepath = api.repos.joinpath('soundfiles', 'ServerSndFilesChecksums.txt')
     if not os.path.isfile(server_md5_filepath):
-        print("File path {} does not exist. Please generate it first.".format(
+        args.log.error("File path {} does not exist. Please generate it first.".format(
             server_md5_filepath))
         return return_data
 
@@ -529,8 +526,8 @@ def write_modified_soundfiles(args):
             (md5, sffolder, sfpath, ext) = re.match(
                 r"^(.*?)  .*/([^/]+?)/([^/]+?)\.(.*)", line).groups()
             server_md5_items.add(sfpath)
-            if sfpath in file_path_uid_map:
-                uid = file_path_uid_map[sfpath]
+            if sfpath in catalog.file_path_uid_map:
+                uid = catalog.file_path_uid_map[sfpath]
                 bs_obj = catalog.objects[uid].bitstreams
                 check_sf = "%s.%s" % (sfpath, ext)
                 found = False
@@ -605,16 +602,16 @@ def write_languages(args):
         " UNION ".join(union_query_array))
     data = list(db(query))
     if len(data) > 0:
-        print(
+        args.log.warning(
             "\nData of these languages differ across studies - please clean up data first:")
         for row in data:
-            print("\n")
+            args.log.warning("\n")
             for study in all_studies:
                 query = """SELECT LanguageIx, ShortName FROM Languages_%s
                     WHERE LanguageIx = %s""" % (study, row['LanguageIx'])
                 qdata = list(db(query))
                 if len(qdata) > 0:
-                    print("LanguageIx = %s (%s) in study %s" % (
+                    args.log.warning("LanguageIx = %s (%s) in study %s" % (
                         qdata[0]['LanguageIx'], qdata[0]['ShortName'], study))
         return
 
@@ -658,7 +655,8 @@ def write_valid_soundfolders(args):
         if len(data) > 0:
             for row in data:
                 valid_folders.add(row['FilePathPart'])
-    with codecs.open("valid_soundfolders.txt", "w", "utf-8-sig") as f:
+    with codecs.open(api.repos.joinpath(
+            "soundfiles", "valid_soundfilepaths.txt"), "w", "utf-8-sig") as f:
         f.write("\n".join(sorted(valid_folders)))
         f.close()
 
@@ -702,7 +700,7 @@ def write_valid_soundfilepaths(args):
                 existsBasis = False
                 for t in d2:
                     if t['P'] == 1 or t['L'] == 1:
-                        print("check %s = %s IxElic %s for AltPhon |& AltLex = 1" % (
+                        args.log.warning("check %s = %s IxElic %s for AltPhon |& AltLex = 1" % (
                             row['LanguageIx'], row['FilePathPart'], r['IxElicitation']))
                     if t['P'] == 0 and t['L'] == 0:
                         existsBasis = True
@@ -716,7 +714,8 @@ def write_valid_soundfilepaths(args):
                 #     print("check %s = %s IxElic %s no AltPhon = AltLex = 0" % (
                 #         row['LanguageIx'], row['FilePathPart'], r['IxElicitation']))
 
-    with codecs.open("valid_soundfilepaths.txt", "w", "utf-8-sig") as f:
+    with codecs.open(api.repos.joinpath(
+            "soundfiles", "valid_soundfilepaths.txt"), "w", "utf-8-sig") as f:
         f.write("\n".join(sorted(valid_snd_file_names)))
         f.close()
 
