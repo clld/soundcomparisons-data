@@ -1,0 +1,38 @@
+{
+"EAEA0-0000-3A1B-047F-0": {
+  "bitstreams": [
+    {
+      "bitstreamid": "Oce_Van_Mal_Nth_WNth_MaluaBay_Marasup_Dl_626_leaf_lif.mp3",
+      "checksum": "43528088e68f21bcd318e3738342281e",
+      "created": 1530871113011,
+      "checksum-algorithm": "MD5",
+      "last-modified": 1530871113045,
+      "filesize": 23703,
+      "content-type": "audio/mpeg"
+    },
+    {
+      "bitstreamid": "Oce_Van_Mal_Nth_WNth_MaluaBay_Marasup_Dl_626_leaf_lif.ogg",
+      "checksum": "f7f3bec0501d149acdff552c7f379825",
+      "created": 1530871114121,
+      "checksum-algorithm": "MD5",
+      "last-modified": 1530871114178,
+      "filesize": 27949,
+      "content-type": "audio/ogg"
+    },
+    {
+      "bitstreamid": "Oce_Van_Mal_Nth_WNth_MaluaBay_Marasup_Dl_626_leaf_lif.wav",
+      "checksum": "b23fd28f8b7fcbc1d3b5061addf5a1bd",
+      "created": 1530871118198,
+      "checksum-algorithm": "MD5",
+      "last-modified": 1530871118237,
+      "filesize": 185794,
+      "content-type": "audio/wav"
+    }
+  ],
+  "metadata": {
+    "collection": "soundcomparisons",
+    "name": "Oce_Van_Mal_Nth_WNth_MaluaBay_Marasup_Dl_626_leaf_lif",
+    "type": "soundfile"
+  }
+}
+}

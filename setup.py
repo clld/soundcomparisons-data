@@ -10,7 +10,6 @@ setup(
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
     ],
@@ -18,10 +17,14 @@ setup(
     author_email='forkel@shh.mpg.de',
     url='http://soundcomparisons.com',
     keywords='data',
-    packages=find_packages(),
+    packages=find_packages(where='src'),
+    package_dir={'': 'src'},
     include_package_data=True,
     zip_safe=False,
+    platforms='any',
+    python_requires='>=3.5',
     install_requires=[
+        'tqdm',
         'clldutils',
         'cdstarcat>=0.6',
         'attrs',
@@ -32,8 +35,11 @@ setup(
     extras_require={
         'test': [
             'pytest',
+            'pytest-mock',
+            'pytest-cov',
+            'coverage>=4.2',
         ],
-        'dev': [],
+        'dev': ['flake8'],
     },
     entry_points={
         'console_scripts': [
