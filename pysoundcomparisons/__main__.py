@@ -475,7 +475,7 @@ def write_modified_soundfiles(args):
     • 'ServerSndFilesChecksums.txt' in 'pysoundcomparisons' - generate via:
         find /srv/soundcomparisons/site/sound/ -iname "*[.wav\\|.mp3\\|.ogg]" -type f -exec md5sum {} \\; > ServerSndFilesChecksums.txt
       at soundcomparisons.com server
-    • 'valid_soundfilepaths.txt' in 'pysoundcomparisons' - generate via 'write_valid_soundfilepaths'
+    • 'valid_soundfilepaths.txt' in 'soundfiles' - generate via 'write_valid_soundfilepaths'
     """
 
     api = _api(args)
