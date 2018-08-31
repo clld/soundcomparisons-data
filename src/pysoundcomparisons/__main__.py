@@ -11,7 +11,6 @@ legacy:
 import os
 import sys
 import json
-import codecs
 import shutil
 import errno
 import requests
@@ -19,16 +18,24 @@ import zipfile
 import re
 from pathlib import Path
 from collections import OrderedDict
-
+from itertools import groupby
 from urllib.request import urlopen, urlretrieve
 
-from clldutils import jsonlib
+from tqdm import tqdm
 from clldutils.clilib import ArgumentParserWithLogging, command
 from clldutils.dsv import UnicodeWriter
+from clldutils.path import md5
 
 from pysoundcomparisons.api import SoundComparisons
 from pysoundcomparisons.db import DB
 from pysoundcomparisons.mediacatalog import MediaCatalog, SoundfileName
+
+
+def _get_catalog(args):
+    return MediaCatalog(
+        args.repos / 'soundfiles' / 'catalog.json',
+        cdstar_url=os.environ.get('CDSTAR_URL', 'https://cdstar.shh.mpg.de'))
+
 
 def _db(args):
     return DB(host=args.db_host, db=args.db_name, user=args.db_user, password=args.db_password)
@@ -57,19 +64,6 @@ def _write_csv_to_file(data, file_name, api, header=None, dir_name='cldf'):
         for row in data:
             w.writerow(row)
 
-def _get_jsonparsed_data(url):
-    """
-    Receive the content of url, parse it as JSON and return the object.
-    """
-    repsonse = None
-    try:
-        response = urlopen(url)
-        if response is None:
-            return None
-        data = response.read().decode("utf-8")
-        return json.loads(data)
-    except:
-        return None
 
 def _copy_path(src, dest):
     """
@@ -83,7 +77,8 @@ def _copy_path(src, dest):
         if e.errno == errno.ENOTDIR:
             shutil.copy(src, dest)
         else:
-            args.log.error('Directory not copied. Error: %s' % e)
+            raise
+
 
 def _copy_save_url(url, query, dest):
     """
@@ -99,6 +94,7 @@ def _copy_save_url(url, query, dest):
     with Path(dest).open(mode="wb") as output:
         output.write(response.read())
     return True
+
 
 def _fetch_save_scdata_json(url, dest, file_path, prefix, with_online_soundpaths=False):
     """
@@ -123,7 +119,7 @@ def _fetch_save_scdata_json(url, dest, file_path, prefix, with_online_soundpaths
 
 
 @command()
-def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_needed=True):
+def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_needed=False):
     """
     Downloads desired sound files as {sound/}FilePathPart/FilePathPart_WordID.EXT from CDSTAR
     to {current_folder}/sound or to out_path if passed.
@@ -144,20 +140,16 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
 
     db_needed = False if all items can be calculated as keys of catalog.json like FilePathPart {+ WordID}
     """
-
-    from cdstarcat import OBJID_PATTERN
-
-    api = _api(args)
     if db_needed:
         db = _db(args)
 
-    catalog = MediaCatalog(api.repos.joinpath('soundfiles', 'catalog.json'))
+    catalog = _get_catalog(args)
 
     # holds all desired FilePathParts+WordIDs
     desired_keys = set()
 
     # get desired extensions
-    valid_ext = catalog.valid_mimetypes.keys()
+    valid_ext = catalog.mimetypes.keys()
     desired_ext = list(set(args.args) & set(valid_ext))
     if len(desired_ext) == 0:
         desired_ext = list(valid_ext)
@@ -219,66 +211,33 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
                     else:
                         args.log.warning("LanguageIx %s unknown - will be ignored" % (i))
 
-    # parse UIDs and the rest
     for i in args.args:
-        if OBJID_PATTERN.match(i):
-            if i in catalog: # UID ?
-                desired_keys.add(SoundfileName(catalog[i].metadata['name']))
-            else:
-                args.log.warning("UID %s unknown - will be ignored" % (i))
+        if i in catalog: # UID or SoundfileName?
+            desired_keys.add(i)
         else:
-            try: # FilePathPart + WordID {+ Extension} ?
-                sf = SoundfileName(i)
-                if sf in catalog:
-                    desired_keys.add(sf)
-                else:
-                    args.log.warning("Name %s unknown - will be ignored" % (i))
-            except ValueError: # FilePathPart only ?
-                new_keys = [
-                    SoundfileName(k) for k in catalog.names_for_variety(i)]
-                if len(new_keys) > 0:
-                    desired_keys.update(new_keys)
-                else:
-                    args.log.warning("%s unknown - will be ignored" % (i))
+            desired_keys.update(SoundfileName(k) for k in catalog.get_soundfilenames(i))
 
-    # download all desired sound files from CDSTAR
-    if not os.path.exists(out_path):
-        os.makedirs(out_path)
-    sffolder = ""
-    desired_mimetypes = [catalog.valid_mimetypes[ext] for ext in desired_ext]
-    for pth in sorted(desired_keys):
-        obj = catalog[pth]
-        # check for available bitstreams for desired mimitypes
-        if pth.extension: # user wants specific one ?
-            if pth.extension in catalog.valid_mimetypes:
-                bs_objs = catalog.matching_bitstreams_for_mimetypes(
-                    obj, catalog.valid_mimetypes[pth.extension])
-            else:
-                args.log.warning("%s.%s not found - will be ignored" % (
-                    pth, pth.extension))
-                continue
-        else:
-            bs_objs = catalog.matching_bitstreams_for_mimetypes(
-                obj, desired_mimetypes)
-        if len(bs_objs) == 0:
-            #falling back to first bitstream if any
-            try:
-                bs_objs = [catalog[pth].bitstreams[0]]
-            except:
-                args.log.warning("No sound file for %s found" % (pth))
-                continue
-        if pth.variety != sffolder:
-            sffolder = pth.variety
-            args.log.info("downloading sound files for %s ..." % (sffolder))
-            if not os.path.exists(os.path.join(out_path, pth.variety)):
-                os.makedirs(os.path.join(out_path, pth.variety))
-        for bs in bs_objs:
-            try:
-                urlretrieve(catalog.bitstream_url(obj, bs),
-                        os.path.join(out_path, sffolder, bs.id))
-            except Exception as e:
-                args.log.warning("Dowloading %s\n  %s" % (
-                    catalog.bitstream_url(obj, bs), e))
+    args.log.info('{0} sound files selected'.format(len(desired_keys)))
+
+    out_path = Path(out_path)
+    if not out_path.exists():
+        out_path.mkdir()
+
+    desired_mimetypes = [catalog.mimetypes[ext] for ext in desired_ext]
+
+    pb = tqdm(total=len(desired_keys))
+    for folder, sfns in groupby(sorted(desired_keys), lambda s: s.variety):
+        folder = out_path / folder
+        if not folder.exists():
+            folder.mkdir()
+
+        for obj in [catalog[sfn] for sfn in sfns]:
+            pb.update()
+            for bs in catalog.matching_bitstreams(obj, mimetypes=desired_mimetypes):
+                target = folder / bs.id
+                if (not target.exists()) or md5(target) != bs.md5:
+                    urlretrieve(catalog.bitstream_url(obj, bs), str(target))
+
 
 @command()
 def create_offline_version(args):
@@ -738,47 +697,13 @@ def write_translations(args):
             json.dump(data, fp, indent=4)
 
 
-@command()
-def upload(args):
-    from pysoundcomparisons.mediacatalog import MediaCatalog
-    from pycdstar.api import Cdstar
-
-    api = _api(args)
-
-    with MediaCatalog(args.repos) as cat:
-        cat.add(
-            Cdstar(
-                service_url=os.environ['CDSTAR_URL'],
-                user=os.environ['CDSTAR_USER'],
-                password=os.environ['CDSTAR_PWD']),
-            args.args[0])
-
-    return
-
-    with Catalog(
-        sfdir / 'catalog.json',
-        cdstar_url=os.environ['CDSTAR_URL'],
-        cdstar_user=os.environ['CDSTAR_USER'],
-        cdstar_pwd=os.environ['CDSTAR_PWD']) as cat:
-        for fname in sfdir.joinpath('upload').iterdir():
-            if fname.is_file() and fname.name not in ['README', '.gitignore']:
-                md = {
-                    'collection': 'soundcomparisons',
-                    'path': str(fname.relative_to(sfdir / 'upload')),
-                }
-                try:
-                    _, _, obj = list(cat.create(fname, md, filter_=lambda f: True))[0]
-                except:
-                    print(fname)
-
-
 def main():  # pragma: no cover
     parser = ArgumentParserWithLogging('pysoundcomparisons')
     parser.add_argument(
         '--repos',
         help="path to soundcomparisons-data repository",
         type=Path,
-        default=Path(__file__).resolve().parent.parent)
+        default=Path(__file__).resolve().parent.parent.parent)
     parser.add_argument('--db-host', default='localhost')
     parser.add_argument('--db-name', default='soundcomparisons')
     parser.add_argument('--db-user', default='soundcomparisons')
