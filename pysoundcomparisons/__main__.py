@@ -10,7 +10,6 @@ legacy:
 """
 import os
 import sys
-import pathlib
 import json
 import codecs
 import shutil
@@ -21,12 +20,7 @@ import re
 from pathlib import Path
 from collections import OrderedDict
 
-try:
-    # For Python 3.0 and later
-    from urllib.request import urlopen
-except ImportError:
-    # Fall back to Python 2's urllib2
-    from urllib2 import urlopen
+from urllib.request import urlopen, urlretrieve
 
 from clldutils import jsonlib
 from clldutils.clilib import ArgumentParserWithLogging, command
@@ -34,7 +28,7 @@ from clldutils.dsv import UnicodeWriter
 
 from pysoundcomparisons.api import SoundComparisons
 from pysoundcomparisons.db import DB
-from pysoundcomparisons.mediacatalog import MediaCatalog
+from pysoundcomparisons.mediacatalog import MediaCatalog, SoundfileName
 
 def _db(args):
     return DB(host=args.db_host, db=args.db_name, user=args.db_user, password=args.db_password)
@@ -142,6 +136,7 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
         Study Name(s): Brazil Europe ...
         FilePathPart(s): Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl ...
         FilePathPart(s)+Word: Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_909_praised_maalato ...
+        FilePathPart(s)+Word.EXT: Clt_Bryth_Wel_Dyfed_Pem_Maenclochog_Dl_909_praised_maalato.mp3 ...
         Language_Index: 11121250509 11131000008 ...
       Valid EXTs: mp3 ogg wav
         (if an extension is not stored it falls back to the first ext mentioned in catalog,
@@ -177,94 +172,94 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
             desired_studies = list(set(args.args) & set(valid_studies))
             if len(desired_studies) > 0:
                 # remove study names from args.args
-                args.args = list(set(args.args)-set(desired_studies))
+                args.args = list(set(args.args) - set(desired_studies))
                 q = " UNION ".join([
                     "SELECT DISTINCT FilePathPart AS f FROM Languages_%s" % (s) for s in desired_studies])
                 for x in list(db(q)):
-                    new_keys = catalog.file_path_keys_with_prefix(x['f'])
+                    new_keys = [
+                        SoundfileName(k) for k in catalog.names_for_variety(x['f'])]
                     if len(new_keys) == 0:
                         args.log.warning(
                             "Nothing found for %s in catalog - will be ignored" % (
                                 x['f']))
                     desired_keys.update(new_keys)
+        except ValueError as e:
+            args.log.warning(e)
         except Exception as e:
             args.log.error("Check DB settings!")
             args.log.error(e)
             return
 
         # mapping LanguageIx -> FilePathPart
-        q = " UNION ".join([
-            """SELECT DISTINCT
-                FilePathPart AS f, LanguageIx AS i
-               FROM Languages_%s""" % (s) for s in valid_studies])
-        try:
-            idx_map = {str(x['i']): x['f'] for x in list(db(q))}
-        except Exception as e:
-            args.log.error("Check DB settings!")
-            args.log.error(e)
-            return
+        if len(args.args) > 0:
+            q = " UNION ".join([
+                """SELECT DISTINCT
+                    FilePathPart AS f, LanguageIx AS i
+                   FROM Languages_%s""" % (s) for s in valid_studies])
+            try:
+                idx_map = {str(x['i']): x['f'] for x in list(db(q))}
+            except Exception as e:
+                args.log.error("Check DB settings!")
+                args.log.error(e)
+                return
 
-        # parse and validate left desired keys
-        for i in args.args:
-            if re.match(r"^\d{11,}$", i):
-                if i in idx_map.keys(): # LanguageIx ?
-                    new_keys = catalog.file_path_keys_with_prefix(idx_map[i])
-                    if len(new_keys) == 0:
-                        args.log.warning(
-                            "Nothing found for LanguageIx %s (%s) in catalog - will be ignored" % (
-                                i, idx_map[i]))
-                    desired_keys.update(new_keys)
-                else:
-                    args.log.warning("%s unknown as LanguageIx in DB - will be ignored" % (i))
-            elif OBJID_PATTERN.match(i):
-                if i in catalog: # UID ?
-                    desired_keys.add(catalog[i].metadata['name'])
-                else:
-                    args.log.warning("%s unknown as UID in catalog.json - will be ignored" % (i))
-            else: # FilePathPart {+ WordID} ?
-                k = len(re.split(r"_\d{3,}_", i))
-                if k == 1: # FilePathPart only ?
-                    new_keys = catalog.file_path_keys_with_prefix(i)
-                    if len(new_keys) > 0:
+            # parse LanguageIxs
+            for i in args.args:
+                if re.match(r"^\d{11,}$", i):
+                    # remove found LanguageIx from args.args
+                    args.args = list(set(args.args) - set([i]))
+                    if i in idx_map.keys(): # LanguageIx ?
+                        new_keys = [
+                            SoundfileName(k) for k in catalog.names_for_variety(idx_map[i])]
+                        if len(new_keys) == 0:
+                            args.log.warning(
+                                "No sounds for LanguageIx %s (%s) - will be ignored" % (
+                                    i, idx_map[i]))
                         desired_keys.update(new_keys)
                     else:
-                        args.log.warning("%s unknown - will be ignored" % (i))
-                elif k == 2: # FilePathPart + WordID
-                    if i in catalog:
-                        desired_keys.add(i)
-                    else:
-                        args.log.warning("%s unknown - will be ignored" % (i))
+                        args.log.warning("LanguageIx %s unknown - will be ignored" % (i))
+
+    # parse UIDs and the rest
+    for i in args.args:
+        if OBJID_PATTERN.match(i):
+            if i in catalog: # UID ?
+                desired_keys.add(SoundfileName(catalog[i].metadata['name']))
+            else:
+                args.log.warning("UID %s unknown - will be ignored" % (i))
+        else:
+            try: # FilePathPart + WordID {+ Extension} ?
+                sf = SoundfileName(i)
+                if sf in catalog:
+                    desired_keys.add(sf)
                 else:
-                    args.log.warning("%s unknown - will be ignored" % (i))
-    else:
-        for i in args.args:
-            k = len(re.split(r"_\d{3,}_", i))
-            if k == 1: # FilePathPart only ?
-                new_keys = catalog.file_path_keys_with_prefix(i)
+                    args.log.warning("Name %s unknown - will be ignored" % (i))
+            except ValueError: # FilePathPart only ?
+                new_keys = [
+                    SoundfileName(k) for k in catalog.names_for_variety(i)]
                 if len(new_keys) > 0:
                     desired_keys.update(new_keys)
                 else:
                     args.log.warning("%s unknown - will be ignored" % (i))
-            elif k == 2: # FilePathPart + WordID
-                if i in catalog:
-                    desired_keys.add(i)
-                else:
-                    args.log.warning("%s unknown - will be ignored" % (i))
-            else:
-                args.log.warning("%s unknown - will be ignored" % (i))
 
     # download all desired sound files from CDSTAR
-    if "CDSTAR_URL" in os.environ:
-        service_url = os.environ["CDSTAR_URL"]
-    else:
-        service_url = "http://cdstar.shh.mpg.de"
-    cur_sffolder = ""
     if not os.path.exists(out_path):
         os.makedirs(out_path)
+    sffolder = ""
+    desired_mimetypes = [catalog.valid_mimetypes[ext] for ext in desired_ext]
     for pth in sorted(desired_keys):
+        obj = catalog[pth]
         # check for available bitstreams for desired mimitypes
-        bs_objs = catalog.matching_bitstreams_for_mimetypes(
-            pth, [catalog.valid_mimetypes[ext] for ext in desired_ext])
+        if pth.extension: # user wants specific one ?
+            if pth.extension in catalog.valid_mimetypes:
+                bs_objs = catalog.matching_bitstreams_for_mimetypes(
+                    obj, catalog.valid_mimetypes[pth.extension])
+            else:
+                args.log.warning("%s.%s not found - will be ignored" % (
+                    pth, pth.extension))
+                continue
+        else:
+            bs_objs = catalog.matching_bitstreams_for_mimetypes(
+                obj, desired_mimetypes)
         if len(bs_objs) == 0:
             #falling back to first bitstream if any
             try:
@@ -272,24 +267,18 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
             except:
                 args.log.warning("No sound file for %s found" % (pth))
                 continue
-        # get folder name out of pth
-        p = re.split(r"_\d{3,}_", pth)
-        if len(p) != 2:
-            args.log.warning("Invalid key %s - will be ignored" % (s))
-            continue
-        sffolder = p[0]
-        if sffolder != cur_sffolder:
+        if pth.variety != sffolder:
+            sffolder = pth.variety
             args.log.info("downloading sound files for %s ..." % (sffolder))
-            cur_sffolder = sffolder
-            if not os.path.exists(os.path.join(out_path, sffolder)):
-                os.makedirs(os.path.join(out_path, sffolder))
+            if not os.path.exists(os.path.join(out_path, pth.variety)):
+                os.makedirs(os.path.join(out_path, pth.variety))
         for bs in bs_objs:
-            args.log.debug("Dowloading %s/%s" % (catalog[pth].id, bs.id))
-            if not _copy_save_url(service_url,
-                    "/bitstreams/%s/%s" % (catalog[pth].id, bs.id),
-                    os.path.join(out_path, sffolder, bs.id)):
-                args.log.error("Check connection %s/bitstreams/%s/%s" % (
-                    service_url, catalog[pth].id, bs.id))
+            try:
+                urlretrieve(catalog.bitstream_url(obj, bs),
+                        os.path.join(out_path, sffolder, bs.id))
+            except Exception as e:
+                args.log.warning("Dowloading %s\n  %s" % (
+                    catalog.bitstream_url(obj, bs), e))
 
 @command()
 def create_offline_version(args):
@@ -425,7 +414,7 @@ def create_offline_version(args):
             for lg in d['languages']:
                 sound_file_folders[s].append(lg['FilePathPart'])
 
-    # check if user passed desired stuy names for sounds
+    # check if user passed desired study names for sounds
     desired_sounds = []
     if "all_sounds" in args.args:
         desired_sounds = list(all_studies)
@@ -446,7 +435,7 @@ def create_offline_version(args):
     pth = os.path.join(outPath, "sound")
     for study in desired_sounds:
         if study not in sound_file_folders.keys():
-            args.log.warning("No FilePathPart info found for study %s -- will be ignored" % (study))
+            args.log.warning("Nothing found for study %s -- will be ignored" % (study))
             continue
         # get all cdstar sound file paths and download them
         args.args = ['mp3', 'ogg']
@@ -788,16 +777,16 @@ def main():  # pragma: no cover
     parser.add_argument(
         '--repos',
         help="path to soundcomparisons-data repository",
-        type=pathlib.Path,
-        default=pathlib.Path(__file__).resolve().parent.parent)
+        type=Path,
+        default=Path(__file__).resolve().parent.parent)
     parser.add_argument('--db-host', default='localhost')
     parser.add_argument('--db-name', default='soundcomparisons')
     parser.add_argument('--db-user', default='soundcomparisons')
     parser.add_argument('--db-password', default='pwd')
     parser.add_argument('--sc-host', default='localhost')
     parser.add_argument('--sc-repo',
-        type=pathlib.Path,
-        default=pathlib.Path(__file__).resolve().parent.parent.parent / 'Sound-Comparisons')
+        type=Path,
+        default=Path(__file__).resolve().parent.parent.parent / 'Sound-Comparisons')
     parser.add_argument('--only-for-study', default=None)
     sys.exit(parser.main())
 
