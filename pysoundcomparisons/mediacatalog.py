@@ -18,7 +18,6 @@ class SoundfileName(str):
         (s.variety, s.word_id, s.word_text, s.extension) = p
         return s
 
-
 class MediaCatalog(Catalog):
 
     valid_mimetypes = {
@@ -41,20 +40,19 @@ class MediaCatalog(Catalog):
 
     @lazyproperty
     def _name_uid_map(self):
-        return {obj.metadata['name']: obj for obj in self}
+        return { obj.metadata['name'] : obj for obj in self }
 
     def names_for_variety(self, prefix="", trailing_delimiter="_"):
         return [
             k for k in self._name_uid_map if k.startswith(prefix + trailing_delimiter)]
 
     def matching_bitstreams_for_mimetypes(self, obj, mimetypes=None):
-        mimetypes = mimetypes or set(self.mimetypes.values())
-        return [bs for bs in obj.bitstreams if bs.mimetype in mimetypes]
+            mimetypes = mimetypes or set(self.mimetypes.values())
+            return [bs for bs in obj.bitstreams if bs.mimetype in mimetypes]
 
     def bitstream_url(self, obj, bs):
         return "%s/bitstreams/%s/%s" % (
-            self.api.service_url or os.environ.get(
-                "CDSTAR_URL", "http://cdstar.shh.mpg.de"),
+            self.api.service_url or os.environ.get("CDSTAR_URL", "http://cdstar.shh.mpg.de"),
             obj.id,
             bs.id
         )
