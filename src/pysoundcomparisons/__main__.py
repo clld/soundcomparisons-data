@@ -24,7 +24,7 @@ from urllib.request import urlopen, urlretrieve
 from tqdm import tqdm
 from clldutils.clilib import ArgumentParserWithLogging, command
 from clldutils.dsv import UnicodeWriter
-from clldutils.path import md5
+from clldutils.path import md5, write_text
 
 from pysoundcomparisons.api import SoundComparisons
 from pysoundcomparisons.db import DB
@@ -600,6 +600,7 @@ def write_valid_soundfilepaths(args):
     sound file paths based on database data.
     """
     db = _db(args)
+    api = _api(args)
     all_studies = _get_all_study_names(db)
     union_query_withstudy_array = []
     for study in all_studies:
@@ -647,9 +648,7 @@ def write_valid_soundfilepaths(args):
                 # if not existsBasis:
                 #     print("check %s = %s IxElic %s no AltPhon = AltLex = 0" % (
                 #         row['LanguageIx'], row['FilePathPart'], r['IxElicitation']))
-
-    clldutils.path.write_text(
-        api.repos / 'soundfiles' / 'valid_soundfilepaths.txt',
+    write_text(api.repos / 'soundfiles' / 'valid_soundfilepaths.txt',
         '\n'.join(sorted(valid_snd_file_names)))
 
 
