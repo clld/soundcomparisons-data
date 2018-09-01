@@ -435,7 +435,7 @@ def write_modified_soundfiles(args):
     • 'check': paths on cdstar which are not on soundcomparisons.com BUT VALID paths
         [paths which are probably deleted by mistake on soundcomparisons.com ]
     - files needed before execution:
-    • 'ServerSndFilesChecksums.txt' in 'pysoundcomparisons' - generate via:
+    • 'ServerSndFilesChecksums.txt' in 'soundfiles' - generate via:
         find /srv/soundcomparisons/site/sound/ -iname "*[.wav\\|.mp3\\|.ogg]" -type f -exec md5sum {} \\; > ServerSndFilesChecksums.txt
       at soundcomparisons.com server
     • 'valid_soundfilepaths.txt' in 'soundfiles' - generate via 'write_valid_soundfilepaths'
