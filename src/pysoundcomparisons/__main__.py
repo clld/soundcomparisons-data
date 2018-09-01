@@ -34,7 +34,10 @@ from pysoundcomparisons.mediacatalog import MediaCatalog, SoundfileName
 def _get_catalog(args):
     return MediaCatalog(
         args.repos / 'soundfiles' / 'catalog.json',
-        cdstar_url=os.environ.get('CDSTAR_URL', 'https://cdstar.shh.mpg.de'))
+        cdstar_url=os.environ.get('CDSTAR_URL', 'https://cdstar.shh.mpg.de'),
+        cdstar_user=os.environ.get('CDSTAR_USER'),
+        cdstar_pwd=os.environ.get('CDSTAR_PWD'),
+    )
 
 
 def _db(args):
@@ -117,6 +120,12 @@ def _fetch_save_scdata_json(url, dest, file_path, prefix, with_online_soundpaths
             output.write(prefix + r.sub(r"sound/\g<2>/\g<1>",
                                         json.dumps(data, separators=(',', ':'))))
     return data
+
+
+@command()
+def upload(args):
+    with _get_catalog(args) as cat:
+        cat.upload(Path(args.args[0]))
 
 
 @command()
