@@ -77,6 +77,7 @@ class MediaCatalog(Catalog):
         obj = self.api.get_object(cat_obj.id if cat_obj else None)
         print(obj.id)
         md = {'collection': 'soundcomparisons', 'name': sfn, 'type': 'soundfile'}
+        changed = False
         if not cat_obj:  # If the object is already in the catalog, the metadata does not change!
             obj.metadata = md
         for f in files:
@@ -101,13 +102,16 @@ class MediaCatalog(Catalog):
                         break
 
             if create:
+                changed = True
                 print('uploading {0}'.format(f.name))
                 obj.add_bitstream(fname=str(f), name=f.name, mimetype=self.mimetypes[fmt])
                 time.sleep(0.1)
             else:
                 print('skipping {0}'.format(f.name))
 
-        self.add(obj, metadata=md, update=True)
+        if changed:
+            obj.read()
+            self.add(obj, metadata=md, update=True)
 
     def upload(self, d):
         """
