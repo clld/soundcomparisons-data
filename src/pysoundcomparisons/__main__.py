@@ -518,9 +518,20 @@ def write_modified_soundfiles(args):
     # and distinguish between valid paths and not valid ones.
     # 'obsolete' objects could be deleted, 'check' data are valid on cdstar
     #   but not on soundcomparisons.com !
+    sfpath_duplicates = {}
+    md5_duplicates = {}
     for obj in catalog:
         uid = obj.id
         sfpath = obj.metadata['name']
+        if sfpath in sfpath_duplicates:
+            sfpath_duplicates[sfpath].append(uid)
+        else:
+            sfpath_duplicates[sfpath] = [uid]
+        for bs in obj.bitstreams:
+            if bs.md5 in md5_duplicates:
+                md5_duplicates[bs.md5].append(uid)
+            else:
+                md5_duplicates[bs.md5] = [uid]
         if sfpath not in server_md5_items:
             if sfpath in valid_soundfilepaths:
                 if uid not in return_check:
@@ -531,11 +542,23 @@ def write_modified_soundfiles(args):
                     return_obsolete[uid] = []
                 return_obsolete[uid].append(sfpath)
 
+    dup_paths = {}
+    for (k,v) in sfpath_duplicates.items():
+        if len(v) > 1:
+            dup_paths[k]=v
+
+    dup_md5 = {}
+    for (k,v) in md5_duplicates.items():
+        if len(v) > 1:
+            dup_md5[k]=v
+
     return_data = {
         'new': sorted(return_new),
         'modified': {k: return_modified[k] for k in sorted(return_modified)},
         'obsolete': {k: return_obsolete[k] for k in sorted(return_obsolete)},
-        'check': {k: return_check[k] for k in sorted(return_check)}
+        'check': {k: return_check[k] for k in sorted(return_check)},
+        'dup_paths': {k: dup_paths[k] for k in sorted(dup_paths)},
+        'dup_md5': {k: dup_md5[k] for k in sorted(dup_md5)}
     }
 
     with open(api.repos.joinpath('soundfiles', 'modified.json'), 'w') as f:
