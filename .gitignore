@@ -105,3 +105,5 @@ venv.bak/
 .idea/
 translations/.i18n-editor-metadata
 
+# macOSX hidden files
+.DS_Store

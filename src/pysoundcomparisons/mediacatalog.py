@@ -12,7 +12,7 @@ __all__ = ['SoundfileName', 'MediaCatalog']
 
 class SoundfileName(str):
     pattern = re.compile(
-        '(?P<variety>.+?)_(?P<word_id>\d{3})_(?P<word>[^.]+)\.?(?P<extension>.+)?')
+        '(?P<variety>.+?)_(?P<word_id>\d{3,})_(?P<word>[^.]+)\.?(?P<extension>.+)?')
 
     def __new__(cls, content):
         # split into variety|word_id|word_text|{extension}
