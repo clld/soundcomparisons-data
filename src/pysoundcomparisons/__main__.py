@@ -633,53 +633,41 @@ def write_valid_soundfilepaths(args):
     """
     db = _db(args)
     api = _api(args)
-    all_studies = _get_all_study_names(db)
-    union_query_withstudy_array = []
-    for study in all_studies:
-        union_query_withstudy_array.append(
-            "SELECT *, '%s' AS Study FROM Languages_%s" % (study, study))
-
-    # make sure all studies will be concatenated
+    # make sure all data will be concatenated
     db("SET @@group_concat_max_len = 4096")
-    query = """SELECT DISTINCT FilePathPart, LanguageIx, GROUP_CONCAT(Study) AS Studies
-        FROM (%s) AS t GROUP BY FilePathPart""" % (
-        " UNION ".join(union_query_withstudy_array))
+    query = """
+SELECT 
+concat(L.FilePathPart,"/",L.FilePathPart, W.SoundFileWordIdentifierText) as P
+FROM Words AS W, Languages AS L
+WHERE 
+L.study = W.study
+UNION
+SELECT
+concat(
+L.FilePathPart,"/",L.FilePathPart,
+W.SoundFileWordIdentifierText,
+case
+	when T.AlternativeLexemIx > 1 and T.AlternativePhoneticRealisationIx = 0 then concat("_lex", T.AlternativeLexemIx)
+	when T.AlternativeLexemIx = 0 and T.AlternativePhoneticRealisationIx > 1 then concat("_pron", T.AlternativePhoneticRealisationIx)
+	when T.AlternativeLexemIx > 1 and T.AlternativePhoneticRealisationIx > 1 then concat("_lex", T.AlternativeLexemIx,"_pron", T.AlternativePhoneticRealisationIx)
+	else ""
+end
+) as P
+FROM Transcriptions AS T, Words AS W, Languages AS L
+WHERE
+L.`LanguageIx` = T.`LanguageIx`
+AND
+W.`IxElicitation` = T.`IxElicitation`
+AND
+W.IxMorphologicalInstance = T.IxMorphologicalInstance
+AND
+L.study = W.study
+ORDER BY 1 ASC
+    """
     data = list(db(query))
     valid_snd_file_names = set()
     for row in data:
-        for s in row['Studies'].split(","):
-            q = """SELECT DISTINCT 
-                SoundFileWordIdentifierText, IxElicitation, IxMorphologicalInstance
-                FROM Words_%s""" % (s)
-            d = list(db(q))
-            for r in d:
-                q2 = """SELECT DISTINCT
-                    AlternativePhoneticRealisationIx AS P, AlternativeLexemIx AS L FROM Transcriptions_%s
-                    WHERE LanguageIx = %s
-                    AND IxElicitation = %s
-                    AND IxMorphologicalInstance = %s""" % (
-                    s, row['LanguageIx'], r['IxElicitation'], r['IxMorphologicalInstance'])
-                d2 = list(db(q2))
-                fileNamePrefix = row['FilePathPart'] + "/" + \
-                    row['FilePathPart'] + r['SoundFileWordIdentifierText']
-                valid_snd_file_names.add(fileNamePrefix)
-                existsBasis = False
-                for t in d2:
-                    if t['P'] == 1 or t['L'] == 1:
-                        args.log.warning("check %s = %s IxElic %s for AltPhon |& AltLex = 1" % (
-                            row['LanguageIx'], row['FilePathPart'], r['IxElicitation']))
-                    if t['P'] == 0 and t['L'] == 0:
-                        existsBasis = True
-                    if t['P'] == 0 and t['L'] > 1:
-                        valid_snd_file_names.add(fileNamePrefix + "_lex%s" % (t['L']))
-                    elif t['P'] > 1 and t['L'] > 1:
-                        valid_snd_file_names.add(
-                            fileNamePrefix + "_lex%s_pron%s" % (t['L'], t['P']))
-                    elif t['P'] > 1 and t['L'] == 0:
-                        valid_snd_file_names.add(fileNamePrefix + "_pron%s" % (t['P']))
-                # if not existsBasis:
-                #     print("check %s = %s IxElic %s no AltPhon = AltLex = 0" % (
-                #         row['LanguageIx'], row['FilePathPart'], r['IxElicitation']))
+        valid_snd_file_names.add(row['P'])
     write_text(api.repos / 'soundfiles' / 'valid_soundfilepaths.txt',
         '\n'.join(sorted(valid_snd_file_names)))
 
