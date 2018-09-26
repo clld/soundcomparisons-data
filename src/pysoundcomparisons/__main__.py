@@ -25,19 +25,28 @@ from tqdm import tqdm
 from clldutils.clilib import ArgumentParserWithLogging, command
 from clldutils.dsv import UnicodeWriter
 from clldutils.path import md5, write_text
+from cdstarcat import Catalog, Object
 
 from pysoundcomparisons.api import SoundComparisons
 from pysoundcomparisons.db import DB
 from pysoundcomparisons.mediacatalog import MediaCatalog, SoundfileName
 
 
-def _get_catalog(args):
-    return MediaCatalog(
-        args.repos / 'soundfiles' / 'catalog.json',
-        cdstar_url=os.environ.get('CDSTAR_URL', 'https://cdstar.shh.mpg.de'),
-        cdstar_user=os.environ.get('CDSTAR_USER'),
-        cdstar_pwd=os.environ.get('CDSTAR_PWD'),
-    )
+def _get_catalog(args, cattype):
+    if cattype == 'soundfiles':
+        return MediaCatalog(
+            args.repos / 'soundfiles' / 'catalog.json',
+            cdstar_url=os.environ.get('CDSTAR_URL', 'https://cdstar.shh.mpg.de'),
+            cdstar_user=os.environ.get('CDSTAR_USER'),
+            cdstar_pwd=os.environ.get('CDSTAR_PWD'),
+        )
+    if cattype == 'imagefiles':
+        return Catalog(
+            args.repos / 'imagefiles' / 'catalog.json',
+            cdstar_url=os.environ.get('CDSTAR_URL', 'https://cdstar.shh.mpg.de'),
+            cdstar_user=os.environ.get('CDSTAR_USER'),
+            cdstar_pwd=os.environ.get('CDSTAR_PWD'),
+        )
 
 
 def _db(args):
@@ -123,9 +132,54 @@ def _fetch_save_scdata_json(url, dest, file_path, prefix, with_online_soundpaths
 
 
 @command()
-def upload(args):
-    with _get_catalog(args) as cat:
+def upload_soundfiles(args):
+    """
+    Uploads sound files from the passed directory to the CDSTAR server
+    """
+    with _get_catalog(args, 'soundfiles') as cat:
         cat.upload(Path(args.args[0]))
+
+
+@command()
+def upload_images(args):
+    """
+    Uploads image files from the passed directory to the CDSTAR server,
+    if an object identified by metadata's 'name' exists it will be deleted first
+    """
+
+    supported_image_types = ['png', 'gif', 'jpg', 'jpeg', 'tif', 'tiff']
+
+    with _get_catalog(args, 'imagefiles') as cat:
+
+        name_map = {obj.metadata['name']: obj for obj in cat}
+
+        for ifn in sorted(Path(args.args[0]).iterdir()):
+
+            print(ifn.name)
+
+            if ifn.suffix[1:].lower() not in supported_image_types:
+                print('No supported image format - skipping {0}'.format(ifn.name))
+                continue
+
+            # Lookup the image name in catalog:
+            stem = ifn.stem
+            cat_obj = name_map[stem] if stem in name_map else None
+
+            # if it exists delete it
+            if cat_obj:
+                args.log.info('Delete exisiting object %s for %s' % (cat_obj.id, ifn.name))
+                cat.delete(cat_obj.id)
+
+            md = {'collection': 'soundcomparisons',
+                    'name': stem,
+                    'type': 'imagefile',
+                    'path': ifn.name
+                }
+
+            # Create the new object
+            for (fname, created, obj) in cat.create(str(ifn), md):
+                args.log.info('{0} -> {1} object {2.id}'.format(
+                    fname, 'new' if created else 'existing', obj))
 
 
 @command()
@@ -153,7 +207,7 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
     if db_needed:
         db = _db(args)
 
-    catalog = _get_catalog(args)
+    catalog = _get_catalog(args, 'soundfiles')
 
     # holds all desired FilePathParts+WordIDs
     desired_keys = set()
