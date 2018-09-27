@@ -111,23 +111,39 @@ def _copy_save_url(url, query, dest):
 def _fetch_save_scdata_json(url, dest, file_path, prefix, with_online_soundpaths=False):
     """
     get a Sound-Comparisons data JSON object from url and save that object as valid JavaScript
-    file at dest/file_path prefixed by prefix -- in addition replace cdstar sound file urls by
+    file at dest/file_path prefixed by prefix -- in addition replace cdstar sound and image file urls by
     local relative paths (if desired)
     """
     data = requests.get(url).json()
+
+    re_img = re.compile(r"^https?://cdstar[^/]*?/[^/]*?/[^/]*?/(.*)$")
+
+    if file_path == 'data_global':
+        for c in data['global']['contributors']:
+            if 'Avatar' in c:
+                c['Avatar'] = re_img.sub(r"img/contributors/\g<1>", c['Avatar'])
+
+    if file_path.startswith('data_study_'):
+
+        if not with_online_soundpaths:
+            # regex for replacing all soundPaths having http://cdstar.shh.mpg.de/bitstreams/{UID}/{soundPath}
+            # by relative URL sound/{languageFilePath}/{soundPath}
+            # {languageFilePath} is parsed via the fact that each {soundPath} begins with the
+            # {languageFilePath} and can be cut at the occurrance of a _ followed by at least three digits: _\d{3,}
+            re_snd = re.compile(r"https?://cdstar[^/]*?/[^/]*?/[^/]*?/((.*?)_\d{3,}_.*?\.(ogg|mp3))", re.IGNORECASE)
+            for k, v in data['transcriptions'].items():
+                # since the structure is not a fixed one, do it via regex of str(structure) simply
+                v['soundPaths'] = eval(
+                    re_snd.sub(r"sound/\g<2>/\g<1>", json.dumps(v['soundPaths'], separators=(',', ':')))
+                )
+
+        for lg in data['languages']:
+            for ci in lg['ContributorImages']:
+                 ci= re_img.sub(r"img/contributors/\g<1>", ci)
+
     pth = Path(os.path.join(dest, "data", file_path + ".js"))
-    if with_online_soundpaths:
-        with pth.open(mode="w", encoding="UTF-8") as output:
-            output.write(prefix + json.dumps(data, separators=(',', ':')))
-    else:
-        # regex for replacing all soundPaths having http://cdstar.shh.mpg.de/bitstreams/{UID}/{soundPath}
-        # by relative URL sound/{languageFilePath}/{soundPath}
-        # {languageFilePath} is parsed via the fact that each {soundPath} begins with the
-        # {languageFilePath} and can be cut at the occurrance of a _ followed by at least three digits: _\d{3,}
-        r = re.compile(r"http://cdstar[^/]*?/[^/]*?/[^/]*?/((.*?)_\d{3,}.*?\.)")
-        with pth.open(mode="w", encoding="UTF-8") as output:
-            output.write(prefix + r.sub(r"sound/\g<2>/\g<1>",
-                                        json.dumps(data, separators=(',', ':'))))
+    with pth.open(mode="w", encoding="UTF-8") as output:
+        output.write(prefix + json.dumps(data, separators=(',', ':')))
     return data
 
 
@@ -311,6 +327,7 @@ def create_offline_version(args):
       --sc-host --sc-repo createOfflineVersion
         sc-host: URL to soundcomparisons - default http://www.soundcomaprisons.com
         sc-repo: path to local Sound-Comparisons github repository - default './../../../Sound-Comparisons'
+           (../imagefiles/catalog.json is needed)
 
     Optional arguments:
       with_online_soundpaths  - use online cdstar sound paths instead of local ones (mainly for testing)
@@ -357,6 +374,26 @@ def create_offline_version(args):
         os.path.join(outPath, "js", "extern"))
     _copy_path(os.path.join(sndCompRepoPath, "LICENSE"), outPath)
     _copy_path(os.path.join(sndCompRepoPath, "README.md"), outPath)
+
+    # Download all contributor images hosted on CDSTAR
+    args.log.info("downloading images from CDSTAR ...")
+    catalog = _get_catalog(args, 'imagefiles')
+    for obj in catalog:
+        md = obj.metadata
+        if md['name']:
+            response = None
+            try:
+                response = urlopen("http://cdstar.shh.mpg.de/bitstreams/%s/%s" % (obj.id, md['path']))
+            except Exception as e:
+                shutil.rmtree(outPath)
+                args.log.error("Error while downloading image file %s\n%s" % (md['path'], e))
+                return
+            if not response:
+                shutil.rmtree(outPath)
+                args.log.error("Error while downloading image file %s" % (md['path']))
+                return
+            with Path(os.path.join(outPath, "img", "contributors", md['path'])).open(mode="wb") as output:
+                output.write(response.read())
 
     # create index.html - handle and copy the main App.js file
     args.log.info("creating index.html ...")
