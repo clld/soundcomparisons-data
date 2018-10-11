@@ -760,7 +760,7 @@ ORDER BY 1 ASC
     for row in data:
         valid_snd_file_names.add(row['P'])
     write_text(api.repos / 'soundfiles' / 'valid_soundfilepaths.txt',
-        '\n'.join(sorted(valid_snd_file_names)))
+        '\n'.join(sorted(valid_snd_file_names, key=lambda s: s.lower())))
 
 
 @command()
