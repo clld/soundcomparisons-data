@@ -293,7 +293,13 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
 
     for i in args.args:
         if i in catalog:  # UID or SoundfileName?
-            desired_keys.add(i)
+            try: #SoundfileName
+                desired_keys.add(SoundfileName(i))
+            except ValueError: # UID
+                try:
+                    desired_keys.add(SoundfileName(catalog[i].metadata['name']))
+                except ValueError:
+                    args.log.warning('Path for {0} is not valid - will be skipped'.format(i))
         else:
             desired_keys.update(SoundfileName(k) for k in catalog.get_soundfilenames(i))
 
