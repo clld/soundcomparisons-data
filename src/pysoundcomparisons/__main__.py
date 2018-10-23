@@ -1,6 +1,5 @@
 """
 need commands:
-- upload to cdstar
 - merge excel sheet
 - to_mysql
 
@@ -16,6 +15,9 @@ import errno
 import requests
 import zipfile
 import re
+import tempfile
+import platform
+from subprocess import call
 from pathlib import Path
 from collections import OrderedDict
 from itertools import groupby
@@ -196,6 +198,101 @@ def upload_images(args):
             for (fname, created, obj) in cat.create(str(ifn), md):
                 args.log.info('{0} -> {1} object {2.id}'.format(
                     fname, 'new' if created else 'existing', obj))
+
+@command()
+def rename_soundfile(args):
+    """
+    This command downloads the passed old sound files to a temporary folder, renames the old ones by 
+    simultaneously changing their meta data by using:
+      ffmpeg -i old.ext -metadata key=value -codec copy new.ext
+    deletes the old bitstreams and uploads the new ones with same OID.
+    ffmpeg can be installed via https://www.ffmpeg.org and must be found in a shell call.
+    """
+
+    if len(args.args) != 2:
+        args.log.error("need two arguments: old_file_name new_file_name")
+        return
+
+    # OS independent device for suppressing messages whle running a shell command
+    nulldev = open(os.devnull, 'w')
+
+    ffmpeg_cmd = 'ffmpeg'
+    if platform.system() == 'Windows':
+        ffmpeg_cmd = 'ffmpeg.exe'
+
+    # check if ffmpeg can be called on the local machine
+    if call("%s -version" % (ffmpeg_cmd), stdout=nulldev, stderr=nulldev, shell=True) != 0:
+        nulldev.close()
+        args.log.error("Please make sure that '%s' (https://www.ffmpeg.org) is installed and can be found in a shell call." % (ffmpeg_cmd))
+        return
+
+    (old_sfname, new_sfname) = args.args
+
+    try:
+        new_sfname = SoundfileName(new_sfname)
+    except ValueError:
+        nulldev.close()
+        args.log.error("new file name is not valid")
+        return
+
+    with _get_catalog(args, 'soundfiles') as catalog:
+
+        if old_sfname in catalog:
+            obj = catalog.api.get_object(catalog[old_sfname].id)
+        else:
+            nulldev.close()
+            args.log.error("no corresponding entry found for %s" % (old_sfname))
+            return
+
+        tempdir = Path(tempfile.mkdtemp())
+        new_files = []
+
+        for bs in obj.bitstreams:
+
+            # download sound file
+            target = tempdir / bs.id
+            urlretrieve(catalog.bitstream_url(obj, bs), str(target))
+
+            # set new name and store it in new_files array
+            new_target = tempdir / Path(str(new_sfname) + target.suffix)
+            new_files.append(new_target)
+
+            # change sound file meta data and sound file name by using ffmpeg
+            ret = call("%s -i %s -metadata title='%s' -metadata album='%s' -metadata artist='Paul Heggarty: https://soundcomparisons.com/' -codec copy %s" % (
+                ffmpeg_cmd, # command
+                str(target), # input file name
+                new_sfname.word_id + "_" + new_sfname.word, # title
+                str(new_sfname.variety), # album
+                str(new_target) # new output file name
+                ), stdout=nulldev, stderr=nulldev, shell=True)
+            if ret != 0:
+                nulldev.close()
+                args.log.erro("ffmpeg error while processing " + bs.id)
+                return
+
+        nulldev.close()
+
+        # delete old bitstreams
+        for bs in obj.bitstreams:
+            args.log.info('deleting {0}'.format(bs.id))
+            bs.delete()
+
+        # upload new sound files to obj
+        for f in new_files:
+            args.log.info('uploading {0} to {1}'.format(f.name, obj.id))
+            obj.add_bitstream(fname=str(f), name=f.name, mimetype=catalog.mimetypes[f.suffix[1:]])
+
+        # update metadata on CDSTAR
+        new_md = {'collection': 'soundcomparisons', 'name': str(new_sfname), 'type': 'soundfile'}
+        md = obj.metadata
+        md.update(metadata=new_md)
+
+        # update catalog
+        obj.read()
+        catalog.add(obj, metadata=new_md, update=True)
+
+        # remove temporary directory
+        shutil.rmtree(str(tempdir))
 
 
 @command()
