@@ -213,7 +213,7 @@ def rename_soundfile(args):
         args.log.error("need two arguments: old_file_name new_file_name")
         return
 
-    # OS independent device for suppressing messages whle running a shell command
+    # OS independent device for suppressing messages while running a shell command
     nulldev = open(os.devnull, 'w')
 
     ffmpeg_cmd = 'ffmpeg'
@@ -267,7 +267,7 @@ def rename_soundfile(args):
                 ), stdout=nulldev, stderr=nulldev, shell=True)
             if ret != 0:
                 nulldev.close()
-                args.log.erro("ffmpeg error while processing " + bs.id)
+                args.log.error("ffmpeg error while processing " + bs.id)
                 return
 
         nulldev.close()
