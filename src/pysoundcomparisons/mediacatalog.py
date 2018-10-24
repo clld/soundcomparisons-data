@@ -42,7 +42,11 @@ class MediaCatalog(Catalog):
         """
         Return the object identified by UID or a file path.
         """
-        return self.objects.get(key) or self._name_uid_map.get(key)
+        if key in self.objects:
+            return self.objects.get(key)
+        if key in self._name_uid_map:
+            return self._name_uid_map.get(key)
+        raise KeyError(key)
 
     def __contains__(self, item):
         """
