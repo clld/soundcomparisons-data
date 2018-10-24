@@ -202,6 +202,7 @@ def upload_images(args):
 @command()
 def rename_soundfile(args):
     """
+    usage: rename_soundfile old_soundfile_name new_soundfile_name
     This command downloads the passed old sound files to a temporary folder, renames the old ones by 
     simultaneously changing their meta data by using:
       ffmpeg -i old.ext -metadata key=value -codec copy new.ext
@@ -215,22 +216,12 @@ def rename_soundfile(args):
         raise OSError("Please make sure that '%s' (https://www.ffmpeg.org) "
                 "is installed and can be found in a shell call." % (ffmpeg_cmd))
 
-    try:
-        (old_sfname, new_sfname) = args.args
-    except ValueError:
-        raise ValueError("need two arguments: old_file_name new_file_name")
-
-    try:
-        new_sfname = SoundfileName(new_sfname)
-    except ValueError:
-        raise ValueError("new file name is not valid")
+    (old_sfname, new_sfname) = args.args
+    new_sfname = SoundfileName(new_sfname)
 
     with _get_catalog(args, 'soundfiles') as catalog:
 
-        try:
-            obj = catalog.api.get_object(catalog[old_sfname].id)
-        except AttributeError:
-            raise AttributeError("%s not found in catalog" % (old_sfname))
+        obj = catalog.api.get_object(catalog[old_sfname].id)
 
         tempdir = Path(tempfile.mkdtemp())
         new_files = []
