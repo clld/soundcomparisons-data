@@ -17,7 +17,7 @@ import zipfile
 import re
 import tempfile
 import platform
-from subprocess import call
+from subprocess import run
 from pathlib import Path
 from collections import OrderedDict
 from itertools import groupby
@@ -209,90 +209,72 @@ def rename_soundfile(args):
     ffmpeg can be installed via https://www.ffmpeg.org and must be found in a shell call.
     """
 
-    if len(args.args) != 2:
-        args.log.error("need two arguments: old_file_name new_file_name")
-        return
+    ffmpeg_cmd = (platform.system() == 'Windows' and 'ffmpeg.exe') or 'ffmpeg'
 
-    # OS independent device for suppressing messages while running a shell command
-    nulldev = open(os.devnull, 'w')
+    if shutil.which(ffmpeg_cmd) is None:
+        raise OSError("Please make sure that '%s' (https://www.ffmpeg.org) "
+                "is installed and can be found in a shell call." % (ffmpeg_cmd))
 
-    ffmpeg_cmd = 'ffmpeg'
-    if platform.system() == 'Windows':
-        ffmpeg_cmd = 'ffmpeg.exe'
-
-    # check if ffmpeg can be called on the local machine
-    if call("%s -version" % (ffmpeg_cmd), stdout=nulldev, stderr=nulldev, shell=True) != 0:
-        nulldev.close()
-        args.log.error("Please make sure that '%s' (https://www.ffmpeg.org) is installed and can be found in a shell call." % (ffmpeg_cmd))
-        return
-
-    (old_sfname, new_sfname) = args.args
+    try:
+        (old_sfname, new_sfname) = args.args
+    except ValueError:
+        raise ValueError("need two arguments: old_file_name new_file_name")
 
     try:
         new_sfname = SoundfileName(new_sfname)
     except ValueError:
-        nulldev.close()
-        args.log.error("new file name is not valid")
-        return
+        raise ValueError("new file name is not valid")
 
     with _get_catalog(args, 'soundfiles') as catalog:
 
-        if old_sfname in catalog:
+        try:
             obj = catalog.api.get_object(catalog[old_sfname].id)
-        else:
-            nulldev.close()
-            args.log.error("no corresponding entry found for %s" % (old_sfname))
-            return
+        except AttributeError:
+            raise AttributeError("%s not found in catalog" % (old_sfname))
 
         tempdir = Path(tempfile.mkdtemp())
         new_files = []
 
-        for bs in obj.bitstreams:
+        try:
+            for bs in obj.bitstreams:
+                # download sound file
+                target = tempdir / bs.id
+                urlretrieve(catalog.bitstream_url(obj, bs), str(target))
 
-            # download sound file
-            target = tempdir / bs.id
-            urlretrieve(catalog.bitstream_url(obj, bs), str(target))
+                # change sound file meta data and sound file name by using ffmpeg
+                new_target = tempdir / Path(str(new_sfname) + target.suffix)
+                new_files.append(new_target)
+                run(["%s -loglevel error -i %s "
+                        "-metadata title='%s' -metadata album='%s' "
+                        "-metadata artist='Paul Heggarty: https://soundcomparisons.com' "
+                        "-codec copy %s" % (ffmpeg_cmd, str(target),
+                    new_sfname.word_id + "_" + new_sfname.word, str(new_sfname.variety),
+                    str(new_target) )], check=True, shell=True)
 
-            # set new name and store it in new_files array
-            new_target = tempdir / Path(str(new_sfname) + target.suffix)
-            new_files.append(new_target)
+            # delete old bitstreams
+            for bs in obj.bitstreams:
+                args.log.info('deleting {0}'.format(bs.id))
+                bs.delete()
 
-            # change sound file meta data and sound file name by using ffmpeg
-            ret = call("%s -i %s -metadata title='%s' -metadata album='%s' -metadata artist='Paul Heggarty: https://soundcomparisons.com/' -codec copy %s" % (
-                ffmpeg_cmd, # command
-                str(target), # input file name
-                new_sfname.word_id + "_" + new_sfname.word, # title
-                str(new_sfname.variety), # album
-                str(new_target) # new output file name
-                ), stdout=nulldev, stderr=nulldev, shell=True)
-            if ret != 0:
-                nulldev.close()
-                args.log.error("ffmpeg error while processing " + bs.id)
-                return
+            # upload new sound files to obj
+            for f in new_files:
+                args.log.info('uploading {0} to {1}'.format(f.name, obj.id))
+                obj.add_bitstream(fname=str(f), name=f.name, mimetype=catalog.mimetypes[f.suffix[1:]])
 
-        nulldev.close()
+            # update metadata on CDSTAR
+            new_md = {'collection': 'soundcomparisons', 'name': str(new_sfname), 'type': 'soundfile'}
+            md = obj.metadata
+            md.update(metadata=new_md)
 
-        # delete old bitstreams
-        for bs in obj.bitstreams:
-            args.log.info('deleting {0}'.format(bs.id))
-            bs.delete()
+            # update catalog
+            obj.read()
+            catalog.add(obj, metadata=new_md, update=True)
 
-        # upload new sound files to obj
-        for f in new_files:
-            args.log.info('uploading {0} to {1}'.format(f.name, obj.id))
-            obj.add_bitstream(fname=str(f), name=f.name, mimetype=catalog.mimetypes[f.suffix[1:]])
+            shutil.rmtree(str(tempdir))
 
-        # update metadata on CDSTAR
-        new_md = {'collection': 'soundcomparisons', 'name': str(new_sfname), 'type': 'soundfile'}
-        md = obj.metadata
-        md.update(metadata=new_md)
-
-        # update catalog
-        obj.read()
-        catalog.add(obj, metadata=new_md, update=True)
-
-        # remove temporary directory
-        shutil.rmtree(str(tempdir))
+        except:
+            args.log.info("processed sound files are in temporary folder:\n%s" % str(tempdir))
+            raise
 
 
 @command()
