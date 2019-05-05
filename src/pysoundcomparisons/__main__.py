@@ -290,6 +290,10 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
 
     db_needed = False if all items can be calculated as keys of catalog.json like FilePathPart {+ WordID}
     """
+
+    if 'db_needed' in args.args:
+        db_needed = True
+
     if db_needed:
         db = _db(args)
 
@@ -319,7 +323,7 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
                     "SELECT DISTINCT FilePathPart AS f FROM Languages_%s" % (s) for s in desired_studies])
                 for x in list(db(q)):
                     new_keys = [
-                        SoundfileName(k) for k in catalog.names_for_variety(x['f'])]
+                        SoundfileName(k) for k in catalog.get_soundfilenames(x['f'])]
                     if len(new_keys) == 0:
                         args.log.warning(
                             "Nothing found for %s in catalog - will be ignored" % (
@@ -352,7 +356,7 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
                     args.args = list(set(args.args) - set([i]))
                     if i in idx_map.keys():  # LanguageIx ?
                         new_keys = [
-                            SoundfileName(k) for k in catalog.names_for_variety(idx_map[i])]
+                            SoundfileName(k) for k in catalog.get_soundfilenames(idx_map[i])]
                         if len(new_keys) == 0:
                             args.log.warning(
                                 "No sounds for LanguageIx %s (%s) - will be ignored" % (
@@ -381,14 +385,14 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
 
     desired_mimetypes = [catalog.mimetypes[ext] for ext in desired_ext]
 
-    pb = tqdm(total=len(desired_keys))
+    # pb = tqdm(total=len(desired_keys))
     for folder, sfns in groupby(sorted(desired_keys), lambda s: s.variety):
         folder = out_path / folder
         if not folder.exists():
             folder.mkdir()
 
         for obj in [catalog[sfn] for sfn in sfns]:
-            pb.update()
+            # pb.update()
             for bs in catalog.matching_bitstreams(obj, mimetypes=desired_mimetypes):
                 target = folder / bs.id
                 if (not target.exists()) or md5(target) != bs.md5:
@@ -807,6 +811,7 @@ SELECT
 concat(L.FilePathPart,"/",L.FilePathPart, W.SoundFileWordIdentifierText) as P
 FROM Words AS W, Languages AS L
 WHERE 
+L.study <> 'Europe' AND W.study <> 'Europe' AND
 L.study = W.study
 UNION
 SELECT
@@ -822,6 +827,7 @@ end
 ) as P
 FROM Transcriptions AS T, Words AS W, Languages AS L
 WHERE
+L.study <> 'Europe' AND T.study <> 'Europe' AND W.study <> 'Europe' AND
 L.`LanguageIx` = T.`LanguageIx`
 AND
 W.`IxElicitation` = T.`IxElicitation`
