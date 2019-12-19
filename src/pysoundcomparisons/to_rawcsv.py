@@ -19,7 +19,7 @@ from fabric.api import local
 from pycdstar.api import Cdstar
 from pathlib import Path
 from pysoundcomparisons.db import DB
-from clldutils.dsv import UnicodeWriter
+from csvw.dsv import UnicodeWriter
 from collections import OrderedDict
 
 CDSTAR_URL = os.environ.get('CDSTAR_URL')
@@ -67,10 +67,19 @@ def main():
     # export all base tables as CSV files
     db("USE %s" % (args.db_name))
     excludeFields = []
-    excludeTables = ['renamed_soundfiles']
+    excludeTables = [
+        'renamed_soundfiles',
+        'Export_Soundfiles',
+        'Page_ShortLinks',
+        'FlagTooltip',
+        'WikipediaLinks',
+    ]
     for t in list(db("SHOW FULL TABLES WHERE Table_Type = 'BASE TABLE'")):
         table = t[0]
-        if table in excludeTables:
+        if table in excludeTables or\
+                 table.startswith("Default_") or\
+                 table.startswith("Page_") or\
+                 table.startswith("Edit_"):
             continue
         print(table)
         res = db("SELECT * FROM %s" % (table))
