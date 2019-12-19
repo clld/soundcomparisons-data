@@ -25,7 +25,7 @@ from urllib.request import urlopen, urlretrieve
 
 from tqdm import tqdm
 from clldutils.clilib import ArgumentParserWithLogging, command
-from clldutils.dsv import UnicodeWriter
+from csvw.dsv import UnicodeWriter
 from clldutils.path import md5, write_text
 from cdstarcat import Catalog, Object
 
@@ -387,16 +387,30 @@ def downloadSoundFiles(args, out_path=os.path.join(os.getcwd(), "sound"), db_nee
 
     # pb = tqdm(total=len(desired_keys))
     for folder, sfns in groupby(sorted(desired_keys), lambda s: s.variety):
+        args.log.info(' ... {0}'.format(folder))
         folder = out_path / folder
         if not folder.exists():
-            folder.mkdir()
+            try:
+                folder.mkdir()
+            except Exception as e:
+                try:
+                    folder.mkdir()
+                except Exception as e:
+                    args.log.warning(' ... cannot make folder {0}'.format(folder))
+                    continue
 
         for obj in [catalog[sfn] for sfn in sfns]:
             # pb.update()
             for bs in catalog.matching_bitstreams(obj, mimetypes=desired_mimetypes):
                 target = folder / bs.id
                 if (not target.exists()) or md5(target) != bs.md5:
-                    urlretrieve(catalog.bitstream_url(obj, bs), str(target))
+                    try:
+                        urlretrieve(catalog.bitstream_url(obj, bs), str(target))
+                    except Exception as e:
+                        try:
+                            urlretrieve(catalog.bitstream_url(obj, bs), str(target))
+                        except Exception as e:
+                            args.log.warning(' ... ... {0} should be checked'.format(obj.metadata['name']))
 
 
 @command()
