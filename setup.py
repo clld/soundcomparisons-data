@@ -26,7 +26,7 @@ setup(
     install_requires=[
         'tqdm',
         'clldutils',
-        'cdstarcat>=0.6',
+        'cdstarcat>=1.2',
         'attrs',
         'pycldf>=1.0.6',
         'csvw',
