@@ -37,7 +37,7 @@ from pysoundcomparisons.mediacatalog import MediaCatalog, SoundfileName
 def _get_catalog(args, cattype):
     if cattype == 'soundfiles':
         return MediaCatalog(
-            args.repos / 'soundfiles' / 'catalog.json',
+            args.repos / 'soundfiles' / 'catalog.json.zip',
             cdstar_url=os.environ.get('CDSTAR_URL', 'https://cdstar.shh.mpg.de'),
             cdstar_user=os.environ.get('CDSTAR_USER'),
             cdstar_pwd=os.environ.get('CDSTAR_PWD'),
